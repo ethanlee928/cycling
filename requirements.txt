@@ -1,0 +1,11 @@
+tcxreader==0.4.10
+tqdm
+matplotlib
+numpy
+pandas
+opencv-python
+
+# development
+flake8
+black
+isort
