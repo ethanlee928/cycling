@@ -4,17 +4,16 @@ from datetime import timedelta
 from pathlib import Path
 
 import cv2
+import numpy as np
 import pandas as pd
 from tcxreader.tcxreader import TCXReader, TCXTrackPoint
 from tqdm import tqdm
 
-# Constants
 MPS_TO_KPH = 3.6
 MPS_TO_MPH = 2.23694
 
 
 def play_video(args):
-    # Initialize TCXReader and read data from the provided file path
     print("Loading TCX file")
     reader = TCXReader()
     input_file = Path(args.input_file)
@@ -46,7 +45,6 @@ def play_video(args):
             }
         )
 
-    # Create a DataFrame from the list of dictionaries
     df = pd.DataFrame(trackpoint_data)
     df.set_index("Time", inplace=True)
     print("Loading TCX file [DONE]")
@@ -60,7 +58,7 @@ def play_video(args):
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fourcc = cv2.VideoWriter_fourcc(*"XVID")
-    output_filename = input_file.stem + "-output.avi"
+    output_filename = input_video.stem + "-output.avi"
     out = cv2.VideoWriter(output_filename, fourcc, fps, (width, height))
 
     idx = 0
@@ -91,25 +89,66 @@ def play_video(args):
             break
 
         height, width, _ = frame.shape
+        text_overlay = frame.copy()
+
+        text_x, text_y = 150, 600
+        title_font_scale, title_font_thickness = 2, 7
+        value_font_scale, value_font_thickness = 4, 15
+
         # speed row
         color = (255, 255, 255)
-        cv2.putText(frame, "KMH", (200, 700), cv2.FONT_HERSHEY_SIMPLEX, 2, color, 10, cv2.LINE_AA)
-        cv2.putText(frame, f"{speed:.1f}", (200, 800), cv2.FONT_HERSHEY_SIMPLEX, 3, color, 15, cv2.LINE_AA)
+        cv2.putText(
+            text_overlay,
+            "KMH",
+            (text_x, text_y),
+            cv2.FONT_HERSHEY_DUPLEX,
+            title_font_scale,
+            color,
+            title_font_thickness,
+            cv2.LINE_AA,
+        )
+        cv2.putText(
+            text_overlay,
+            f"{speed:.1f}",
+            (text_x, text_y + 100),
+            cv2.FONT_HERSHEY_DUPLEX,
+            value_font_scale,
+            color,
+            value_font_thickness,
+            cv2.LINE_AA,
+        )
 
         # pwr row
-        cv2.putText(frame, "PWR", (200, 900), cv2.FONT_HERSHEY_SIMPLEX, 2, color, 10, cv2.LINE_AA)
-        cv2.putText(frame, f"{power}", (200, 1000), cv2.FONT_HERSHEY_SIMPLEX, 3, color, 15, cv2.LINE_AA)
+        cv2.putText(
+            text_overlay,
+            "PWR",
+            (text_x, text_y + 200),
+            cv2.FONT_HERSHEY_DUPLEX,
+            title_font_scale,
+            color,
+            title_font_thickness,
+            cv2.LINE_AA,
+        )
+        cv2.putText(
+            text_overlay,
+            f"{round(power)}",
+            (text_x, text_y + 300),
+            cv2.FONT_HERSHEY_DUPLEX,
+            value_font_scale,
+            color,
+            value_font_thickness,
+            cv2.LINE_AA,
+        )
 
-        # elevation row
-        cv2.putText(frame, "Elev", (200, 1100), cv2.FONT_HERSHEY_SIMPLEX, 2, color, 10, cv2.LINE_AA)
-        cv2.putText(frame, f"{elevation:.1f}", (200, 1200), cv2.FONT_HERSHEY_SIMPLEX, 3, color, 15, cv2.LINE_AA)
-
+        # Blend the text overlay with the original frame with transparency level (alpha)
+        alpha = 0.7
+        output_frame = cv2.addWeighted(text_overlay, alpha, frame, 1 - alpha, 0)
         if args.debug:
-            cv2.imshow("Video Playback", frame)
+            cv2.imshow("Video Playback", output_frame)
             if cv2.waitKey(25) & 0xFF == ord("q"):
                 break
         else:
-            out.write(frame)
+            out.write(output_frame)
         idx += 1
         t2 = time.monotonic()
         process_time_ms = (t2 - t1) * 100
@@ -119,10 +158,16 @@ def play_video(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Process TCX files for ride data visualization.")
-    parser.add_argument("--input-file", type=str, help="Path to the TCX file to process.")
+    parser = argparse.ArgumentParser(
+        description="Process TCX files for ride data visualization."
+    )
+    parser.add_argument(
+        "--input-file", type=str, help="Path to the TCX file to process."
+    )
     parser.add_argument("--input-video", type=str, help="Patht to video file")
-    parser.add_argument("--kph", action="store_true", help="Convert speed from mph to kph.")
+    parser.add_argument(
+        "--kph", action="store_true", help="Convert speed from mph to kph."
+    )
     parser.add_argument(
         "--timezone",
         type=int,

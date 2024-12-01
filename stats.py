@@ -7,13 +7,11 @@ import pandas as pd
 from tcxreader.tcxreader import TCXReader, TCXTrackPoint
 from tqdm import tqdm
 
-# Constants
 MPS_TO_KPH = 3.6
 MPS_TO_MPH = 2.23694
 
 
 def main(args):
-    # Initialize TCXReader and read data from the provided file path
     reader = TCXReader()
     input_file = Path(args.input_file)
     activity_name = input_file.stem
@@ -29,7 +27,6 @@ def main(args):
         time_adjusted = trackpoint.time + timezone_offset
         speed = trackpoint.tpx_ext.get("Speed")
 
-        # Convert speed based on the flag
         if args.kph:
             speed_kph = speed * MPS_TO_KPH
         else:
@@ -43,11 +40,9 @@ def main(args):
             }
         )
 
-    # Create a DataFrame from the list of dictionaries
     df = pd.DataFrame(trackpoint_data)
     df.set_index("Time", inplace=True)
 
-    # Create a figure and two subplots
     fig, ax1 = plt.subplots()
     ax2 = ax1.twinx()
 
