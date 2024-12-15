@@ -19,7 +19,8 @@ MPS_TO_MPH = 2.23694
 def get_font(fontsize: int, name: str = "american-captain"):
     available_fonts = {
         "american-captain": "fonts/american-captain-font/AmericanCaptain-MdEY.ttf",
-        "damion": "/Users/ethanlee/Desktop/projects/cycling/fonts/damion-font/Damion-8gnD.ttf",
+        "damion": "fonts/damion-font/Damion-8gnD.ttf",
+        "landasans": "fonts/landasans-font/LandasansMedium-ALJ6m.ttf",
     }
     return ImageFont.truetype(available_fonts[name], fontsize)
 
@@ -42,7 +43,7 @@ class TextDrawInstruction:
     font: Optional[ImageFont.FreeTypeFont] = None
 
 
-def draw_text(frame: np.ndarray, instructions: List[TextDrawInstruction]) -> np.ndarray:
+def draw_instructions(frame: np.ndarray, instructions: List[TextDrawInstruction]) -> np.ndarray:
     image = Image.fromarray(frame)
     draw = ImageDraw.Draw(image)
     for instruction in instructions:
@@ -50,7 +51,7 @@ def draw_text(frame: np.ndarray, instructions: List[TextDrawInstruction]) -> np.
     return np.array(image)
 
 
-def draw_text_rows(
+def text_rows_instructions(
     text_rows: List[Tuple[str, str]],
     start_xy: Tuple[int, int],
     fontsizes: Optional[Tuple[int, int]] = None,
@@ -147,11 +148,11 @@ def play_video(args):
         text_overlay = frame.copy()
 
         text_rows = [("KMH", str(round(speed))), ("PWR", str(round(power))), ("ALT", str(round(elevation)))]
-        instructions = draw_text_rows(text_rows, start_xy=(300, 350))
+        instructions = text_rows_instructions(text_rows, start_xy=(300, 350))
         instructions.append(
             TextDrawInstruction("Chillriders Production", (width - 500, height - 100), font=get_font(50, "damion"))
         )
-        text_overlay = draw_text(text_overlay, instructions=instructions)
+        text_overlay = draw_instructions(text_overlay, instructions=instructions)
 
         # Blend the text overlay with the original frame with transparency level (alpha)
         alpha = 0.8
