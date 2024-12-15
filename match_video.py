@@ -1,5 +1,6 @@
 import argparse
 import time
+from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -33,38 +34,41 @@ class Colors:
     BLACK = (0, 0, 0, 1)
 
 
-def draw_text(
-    frame: np.ndarray,
-    text: str,
-    xy: Tuple[int, int],
-    color: Tuple = Colors.WHITE,
-    font: Optional[ImageFont.FreeTypeFont] = None,
-) -> np.ndarray:
+@dataclass
+class TextDrawInstruction:
+    text: str
+    xy: Tuple[int, int]
+    color: Tuple = Colors.WHITE
+    font: Optional[ImageFont.FreeTypeFont] = None
+
+
+def draw_text(frame: np.ndarray, instructions: List[TextDrawInstruction]) -> np.ndarray:
     image = Image.fromarray(frame)
     draw = ImageDraw.Draw(image)
-    draw.text((xy), text, fill=color, font=font)
+    for instruction in instructions:
+        draw.text(instruction.xy, instruction.text, fill=instruction.color, font=instruction.font)
     return np.array(image)
 
 
 def draw_text_rows(
-    frame: np.ndarray,
     text_rows: List[Tuple[str, str]],
     start_xy: Tuple[int, int],
     fontsizes: Optional[Tuple[int, int]] = None,
     line_spacing: Optional[Tuple[int, int]] = None,
     color: Tuple = Colors.WHITE,
-) -> np.ndarray:
+) -> List[TextDrawInstruction]:
     _fontsizes = (100, 200) if fontsizes is None else fontsizes
     _line_spacing = (90, 200) if line_spacing is None else line_spacing
 
+    instructions = []
     x, y = start_xy
     for desc, value in text_rows:
-        frame = draw_text(frame, desc, (x, y), color=color, font=get_font(_fontsizes[0]))
+        desc_instruction = TextDrawInstruction(desc, (x, y), color=color, font=get_font(_fontsizes[0]))
         y += _line_spacing[0]
-        frame = draw_text(frame, value, (x, y), color=color, font=get_font(_fontsizes[1]))
+        value_instruction = TextDrawInstruction(value, (x, y), color=color, font=get_font(_fontsizes[1]))
         y += _line_spacing[1]
-
-    return frame
+        instructions += [desc_instruction, value_instruction]
+    return instructions
 
 
 def tcx_to_df(tcx_file: Path, timezone: int, kph: bool) -> pd.DataFrame:
@@ -143,10 +147,11 @@ def play_video(args):
         text_overlay = frame.copy()
 
         text_rows = [("KMH", str(round(speed))), ("PWR", str(round(power))), ("ALT", str(round(elevation)))]
-        text_overlay = draw_text(
-            text_overlay, "Chillriders Production", (width - 500, height - 100), font=get_font(50, "damion")
+        instructions = draw_text_rows(text_rows, start_xy=(300, 350))
+        instructions.append(
+            TextDrawInstruction("Chillriders Production", (width - 500, height - 100), font=get_font(50, "damion"))
         )
-        text_overlay = draw_text_rows(text_overlay, text_rows, start_xy=(300, 350))
+        text_overlay = draw_text(text_overlay, instructions=instructions)
 
         # Blend the text overlay with the original frame with transparency level (alpha)
         alpha = 0.8
