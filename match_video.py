@@ -136,7 +136,8 @@ def play_video(args):
                 elevation = row["Elevation"]
                 power = row["Power"]
                 power = power if not np.isnan(power) else 0.0
-                print(f"{timestamp}: Process {idx}/{total_frames} frames, process FPS {process_fps:.1f}")
+                progress = 100 * idx // total_frames
+                print(f"{timestamp}: Process {idx}/{total_frames} frames ({progress}%), process FPS {process_fps:.1f}")
             else:
                 speed, elevation, power = 0, 0, 0
 
