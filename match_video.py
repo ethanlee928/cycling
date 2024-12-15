@@ -2,7 +2,7 @@ import argparse
 import time
 from datetime import timedelta
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -15,9 +15,12 @@ MPS_TO_KPH = 3.6
 MPS_TO_MPH = 2.23694
 
 
-def get_font(fontsize: int):
-    font_path = "fonts/landasans-font/LandasansMedium-ALJ6m.ttf"
-    return ImageFont.truetype(font_path, fontsize)
+def get_font(fontsize: int, name: str = "american-captain"):
+    available_fonts = {
+        "american-captain": "fonts/american-captain-font/AmericanCaptain-MdEY.ttf",
+        "damion": "/Users/ethanlee/Desktop/projects/cycling/fonts/damion-font/Damion-8gnD.ttf",
+    }
+    return ImageFont.truetype(available_fonts[name], fontsize)
 
 
 class Colors:
@@ -41,6 +44,27 @@ def draw_text(
     draw = ImageDraw.Draw(image)
     draw.text((xy), text, fill=color, font=font)
     return np.array(image)
+
+
+def draw_text_rows(
+    frame: np.ndarray,
+    text_rows: List[Tuple[str, str]],
+    start_xy: Tuple[int, int],
+    fontsizes: Optional[Tuple[int, int]] = None,
+    line_spacing: Optional[Tuple[int, int]] = None,
+    color: Tuple = Colors.WHITE,
+) -> np.ndarray:
+    _fontsizes = (100, 200) if fontsizes is None else fontsizes
+    _line_spacing = (90, 200) if line_spacing is None else line_spacing
+
+    x, y = start_xy
+    for desc, value in text_rows:
+        frame = draw_text(frame, desc, (x, y), color=color, font=get_font(_fontsizes[0]))
+        y += _line_spacing[0]
+        frame = draw_text(frame, value, (x, y), color=color, font=get_font(_fontsizes[1]))
+        y += _line_spacing[1]
+
+    return frame
 
 
 def tcx_to_df(tcx_file: Path, timezone: int, kph: bool) -> pd.DataFrame:
@@ -75,7 +99,7 @@ def play_video(args):
     df = tcx_to_df(Path(args.input_file), args.timezone, args.kph)
     print("Loading TCX file [DONE]")
 
-    start_time = pd.to_datetime("2024-11-21 13:35:04")
+    start_time = pd.to_datetime("2024-11-21 13:35:02")
     end_time = pd.to_datetime("2024-11-21 13:42:41")
     filtered_df = df[(df.index >= start_time) & (df.index <= end_time)]
 
@@ -86,11 +110,11 @@ def play_video(args):
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     fourcc = cv2.VideoWriter_fourcc(*"avc1")
-    output_filename = input_video.stem + "-output.mp4"
+    output_filename = input_video.stem + "-output.mp4" if args.output_path is None else args.output_path
     out = cv2.VideoWriter(output_filename, fourcc, fps, (width, height))
 
     idx = 0
-    process_time_ms, process_fps = 0, 0
+    process_fps = 0
     speed, elevation = 0, 0
 
     if not cap.isOpened():
@@ -118,25 +142,11 @@ def play_video(args):
         height, width, _ = frame.shape
         text_overlay = frame.copy()
 
-        text_x, text_y = 500, 400
-        fontsize1, fontsize2 = 120, 200
-        d1, d2 = 90, 200
-
-        # speed row
-        text_overlay = draw_text(text_overlay, "KMH", (text_x, text_y), font=get_font(fontsize1))
-        text_overlay = draw_text(text_overlay, f"{round(speed)}", (text_x, text_y + d1), font=get_font(fontsize2))
-
-        # pwr row
-        text_overlay = draw_text(text_overlay, "PWR", (text_x, text_y + d1 + d2), font=get_font(fontsize1))
+        text_rows = [("KMH", str(round(speed))), ("PWR", str(round(power))), ("ALT", str(round(elevation)))]
         text_overlay = draw_text(
-            text_overlay, f"{round(power)}", (text_x, text_y + d1 * 2 + d2), font=get_font(fontsize2)
+            text_overlay, "Chillriders Production", (width - 500, height - 100), font=get_font(50, "damion")
         )
-
-        # altitude row
-        text_overlay = draw_text(text_overlay, "ALT", (text_x, text_y + (d1 + d2) * 2), font=get_font(fontsize1))
-        text_overlay = draw_text(
-            text_overlay, f"{round(elevation)}", (text_x, text_y + d1 * 3 + d2 * 2), font=get_font(fontsize2)
-        )
+        text_overlay = draw_text_rows(text_overlay, text_rows, start_xy=(300, 350))
 
         # Blend the text overlay with the original frame with transparency level (alpha)
         alpha = 0.8
@@ -149,7 +159,6 @@ def play_video(args):
             out.write(output_frame)
         idx += 1
         t2 = time.monotonic()
-        process_time_ms = (t2 - t1) * 100
         process_fps = 1 / (t2 - t1)
     cap.release()
     cv2.destroyAllWindows()
@@ -157,8 +166,9 @@ def play_video(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process TCX files for ride data visualization.")
-    parser.add_argument("--input-file", type=str, help="Path to the TCX file to process.")
-    parser.add_argument("--input-video", type=str, help="Patht to video file")
+    parser.add_argument("--input-file", type=str, required=True, help="Path to the TCX file to process.")
+    parser.add_argument("--input-video", type=str, required=True, help="Patht to video file")
+    parser.add_argument("--output-path", type=str, default=None, help="Path of output video")
     parser.add_argument("--kph", action="store_true", help="Convert speed from mph to kph.")
     parser.add_argument(
         "--timezone",
