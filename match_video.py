@@ -104,8 +104,8 @@ def play_video(args):
     df = tcx_to_df(Path(args.input_file), args.timezone, args.kph)
     print("Loading TCX file [DONE]")
 
-    start_time = pd.to_datetime("2024-11-21 13:35:02")
-    end_time = pd.to_datetime("2024-11-21 13:42:41")
+    start_time = pd.to_datetime(args.start_time)
+    end_time = pd.to_datetime(args.end_time)
     filtered_df = df[(df.index >= start_time) & (df.index <= end_time)]
 
     df_iter = filtered_df.iterrows()
@@ -176,6 +176,12 @@ if __name__ == "__main__":
     parser.add_argument("--input-file", type=str, required=True, help="Path to the TCX file to process.")
     parser.add_argument("--input-video", type=str, required=True, help="Patht to video file")
     parser.add_argument("--output-path", type=str, default=None, help="Path of output video")
+    parser.add_argument(
+        "--start-time", type=str, default=None, help="Start time of the video in YYYY-MM-DD HH:MM:SS format"
+    )
+    parser.add_argument(
+        "--end-time", type=str, default=None, help="End time of the video in YYYY-MM-DD HH:MM:SS format"
+    )
     parser.add_argument("--kph", action="store_true", help="Convert speed from mph to kph.")
     parser.add_argument(
         "--timezone",
