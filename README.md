@@ -31,6 +31,19 @@ Run the `stats.py` with the exported `.tcx` file as input.
 python3 stats.py -i <your-activity>.tcx
 ```
 
+![basic-stats](./images/afternoon_ride.png)
+
+
+## Match Stats with Video
+
+Run the `match_video.py` with the start time and end time of the video
+
+```bash
+python3 match_video.py --input-video <input.mp4> --input-file <input.tcx> --output-path <output.mp4> --kph --start-time <YYYY-MM-DD HH:MM:SS> --end-time <YYYY-MM-DD HH:MM:SS> --timezone <X>
+```
+
+![video-preview](./images/video-preview.jpg)
+
 ## Extract and Combine Audio
 
 Use ffmpeg to extract the audio from original video:
@@ -44,3 +57,7 @@ Use ffmpeg to combine audio to output video:
 ```bash
 docker run -it --rm -v ${PWD}:/app/ -w /app/ jrottenberg/ffmpeg -i <input-video> -i <input-audio>.aac -c:v copy -c:a aac <output-video>
 ```
+
+## Fonts
+
+`PIL` allows drawing texts with `.ttf` fonts. The [fonts](./fonts/) are downloaded from [fontspace](https://www.fontspace.com).
