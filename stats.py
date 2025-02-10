@@ -43,6 +43,11 @@ def main(args):
     df = pd.DataFrame(trackpoint_data)
     df.set_index("Time", inplace=True)
 
+    if args.save_csv:
+        output_file = input_file.with_suffix(".csv")
+        df.to_csv(output_file)
+        print(f"Processed data saved to {output_file}")
+
     fig, ax1 = plt.subplots()
     ax2 = ax1.twinx()
 
@@ -71,5 +76,6 @@ if __name__ == "__main__":
         default=8,
         help="Timezone offset in hours (default is 8 for HKT).",
     )
+    parser.add_argument("--save-csv", action="store_true", help="Save the processed data to a CSV file.")
     args = parser.parse_args()
     main(args)
