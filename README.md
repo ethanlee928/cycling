@@ -33,7 +33,6 @@ python3 stats.py -i <your-activity>.tcx
 
 ![basic-stats](./images/afternoon_ride.png)
 
-
 ## Match Stats with Video
 
 Run the `match_video.py` with the start time and end time of the video
@@ -61,3 +60,11 @@ docker run -it --rm -v ${PWD}:/app/ -w /app/ jrottenberg/ffmpeg -i <input-video>
 ## Fonts
 
 `PIL` allows drawing texts with `.ttf` fonts. The [fonts](./fonts/) are downloaded from [fontspace](https://www.fontspace.com).
+
+## Workout Analysis
+
+### References
+
+1. [Power Zones by Strava](https://stories.strava.com/articles/feel-the-power-calculate-your-training-pacing-zones-know-what-they-feel-like)
+2. [Power Zones by Pro Cycling Coaching](https://www.procyclingcoaching.com/resources/power-training-zones-for-cycling)
+3. [Strava Guide: Features to Take Your Training to The Next Level](https://stories.strava.com/articles/strava-guide-features-to-take-your-training-to-the-next-level)
