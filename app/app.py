@@ -18,6 +18,14 @@ ZONES = [
     "Neuromuscular Power",
 ]
 
+ZONE_COLORS = ["gray", None, "blue", "green", "orange", "red", "violet"]
+
+
+def set_colors(value: str, color: str = None) -> str:
+    if color is None:
+        return value
+    return f":{color}[{value}]"
+
 
 def get_tcx_data(tcx_file):
     reader = TCXReader()
@@ -54,6 +62,14 @@ def get_zone(power: float, ftp: float) -> int:
     for idx, thresh in enumerate(zones_upper_thresh):
         if percentage < thresh:
             return idx
+    return len(zones_upper_thresh)
+
+
+def get_zone_range(zone: int, ftp: float) -> str:
+    zones_upper_thresh = [0, 0.55, 0.75, 0.9, 1.05, 1.2, 1.5]
+    if zone < len(zones_upper_thresh) - 1:
+        return f"{ftp * zones_upper_thresh[zone]:.0f} - {ftp * zones_upper_thresh[zone + 1]:.0f} W"
+    return f"{ftp * zones_upper_thresh[zone]:.0f}+ W"
 
 
 st.title("Cycling Workout Analysis")
@@ -79,14 +95,26 @@ if uploaded_file is not None:
     col2.metric("Calories", f"{round(calories)} kcal")
     col3.metric("Average Power", f"{round(power_avg)} W")
 
-    zone_counts = df["zone"].value_counts().sort_index()
+    st.header("Power Zones")
+
+    zone_counts = round(df["zone"].value_counts(normalize=True).sort_index() * 100, 1)
+    zone_durations = [str(timedelta(seconds=zone_count)) for zone_count in df["zone"].value_counts().sort_index()]
     zone_counts_df = pd.DataFrame(
-        {"zone": zone_counts.index, "count": zone_counts.values}
+        {
+            "Description": [set_colors(zone, color) for zone, color in zip(ZONES, ZONE_COLORS)],
+            "Range": [get_zone_range(zone, ftp) for zone in range(len(ZONES))],
+            "Zone": zone_counts.index + 1,
+            "Percent": zone_counts.values,
+            "Duration": zone_durations,
+        }
     )
+    zone_counts_df.set_index("Zone", inplace=True)
+    st.subheader("Zone Distribution")
     st.bar_chart(
         data=zone_counts_df,
-        x="zone",
-        y="count",
+        y="Percent",
         use_container_width=True,
         horizontal=True,
     )
+
+    st.table(zone_counts_df.drop(columns=["Percent"]))
