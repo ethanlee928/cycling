@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+import ollama
 import pandas as pd
 import streamlit as st
 from stqdm import stqdm
@@ -42,6 +43,7 @@ def tcx_to_df(tcx_data, kph: bool) -> pd.DataFrame:
         trackpoint_data.append(
             {
                 "time": trackpoint.time,
+                "distance": trackpoint.distance,
                 "speed": speed,
                 "power": trackpoint.tpx_ext.get("Watts"),
                 "cadence": trackpoint.cadence,
@@ -72,8 +74,18 @@ def get_zone_range(zone: int, ftp: float) -> str:
     return f"{ftp * zones_upper_thresh[zone]:.0f}+ W"
 
 
+def model_res_generator(messages):
+    stream = ollama.chat(
+        model="cycling-qwen2.5:7b",
+        messages=messages,
+        stream=True,
+    )
+    for chunk in stream:
+        yield chunk["message"]["content"]
+
+
 st.title("Cycling Workout Analysis")
-uploaded_file = st.file_uploader("Choose a TCX file", type=["tcx"])
+uploaded_file = st.file_uploader("Choose a TCX file", type=["tcx"], accept_multiple_files=False)
 ftp = st.number_input("FTP", 0, 1000, 200)
 
 if uploaded_file is not None:
@@ -95,7 +107,22 @@ if uploaded_file is not None:
     col2.metric("Calories", f"{round(calories)} kcal")
     col3.metric("Average Power", f"{round(power_avg)} W")
 
-    st.header("Power Zones")
+    st.header("Speed")
+    df["distance"] = df["distance"] / 1000
+    df["elevation_scaled"] = df["elevation"] * (df["speed"].max() / df["elevation"].max())
+    st.area_chart(
+        df,
+        x="distance",
+        y=["elevation_scaled", "speed"],
+        x_label="Distance (km)",
+        y_label="Speed (km/h)",
+        color=["#3f3f3f", "#fedd00"],
+        use_container_width=True,
+    )
+
+    st.header("Cadence")
+
+    st.header("Power")
 
     zone_counts = round(df["zone"].value_counts(normalize=True).sort_index() * 100, 1)
     zone_durations = [str(timedelta(seconds=zone_count)) for zone_count in df["zone"].value_counts().sort_index()]
@@ -118,3 +145,11 @@ if uploaded_file is not None:
     )
 
     st.table(zone_counts_df.drop(columns=["Percent"]))
+
+    st.subheader("AI coach")
+    messages = [
+        {
+            "role": "user",
+            "content": f"Debrief the user's workout in 50 words:\n{zone_counts_df}\n.",
+        }
+    ]
