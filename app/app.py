@@ -22,6 +22,16 @@ ZONES = [
 ZONE_COLORS = ["gray", None, "blue", "green", "orange", "red", "violet"]
 
 
+class Colors:
+    GREY = "#3f3f3f"
+    YELLOW = "#FEDD00"
+    PURPLE = "#6A0DAD"
+    PALE_YELLOW = "#FED172"
+    ORANGE = "#F3742B"
+    DARK_ORANGE = "#B83A14"
+    BLUE_PURPLE = "#231650"
+
+
 def set_colors(value: str, color: str = None) -> str:
     if color is None:
         return value
@@ -84,11 +94,18 @@ def model_res_generator(messages):
         yield chunk["message"]["content"]
 
 
+st.set_page_config(page_title="Cycling Workout Analysis", page_icon=":bicyclist:")
+
 st.title("Cycling Workout Analysis")
 uploaded_file = st.file_uploader("Choose a TCX file", type=["tcx"], accept_multiple_files=False)
-ftp = st.number_input("FTP", 0, 1000, 200)
+ftp = st.number_input("Functional Threshold Power (FTP)", 0, 1000, 200)
+
+st.divider()
 
 if uploaded_file is not None:
+    # ----------------- SUMMARY -----------------
+    st.header("Workout Summary")
+
     tcx_data = get_tcx_data(uploaded_file)
     df = tcx_to_df(tcx_data, kph=True)
     df["zone"] = df["power"].apply(lambda x: get_zone(x, ftp))
@@ -107,6 +124,9 @@ if uploaded_file is not None:
     col2.metric("Calories", f"{round(calories)} kcal")
     col3.metric("Average Power", f"{round(power_avg)} W")
 
+    st.divider()
+
+    # ----------------- SPEED -----------------
     st.header("Speed")
     df["distance"] = df["distance"] / 1000
     df["elevation_scaled"] = df["elevation"] * (df["speed"].max() / df["elevation"].max())
@@ -116,14 +136,59 @@ if uploaded_file is not None:
         y=["elevation_scaled", "speed"],
         x_label="Distance (km)",
         y_label="Speed (km/h)",
-        color=["#3f3f3f", "#fedd00"],
+        color=[Colors.GREY, Colors.YELLOW],
         use_container_width=True,
     )
 
+    col1, col2 = st.columns(2)
+    col1.metric("Average Speed", f"{df['speed'].mean():.2f} km/h")
+    col2.metric("Max Speed", f"{df['speed'].max():.2f} km/h")
+
+    st.divider()
+
+    # ----------------- ELEVATION -----------------
+    st.header("Climbing")
+    st.area_chart(
+        df,
+        x="distance",
+        y="elevation",
+        x_label="Distance (km)",
+        y_label="Elevation (m)",
+        color=Colors.DARK_ORANGE,
+    )
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Max Elevation", f"{df['elevation'].max():.0f} m")
+    col2.metric("Min Elevation", f"{df['elevation'].min():.0f} m")
+    diff = df["elevation"].diff().clip(lower=0)
+    elevation_gain = diff[diff < 10].sum()  # Ignore very big elevation changes
+    col3.metric("Elevation Gain", f"{elevation_gain:.0f} m")
+
+    st.divider()
+
+    # ----------------- CADENCE -----------------
     st.header("Cadence")
+    df["elevation_scaled"] = df["elevation"] * (df["cadence"].max() / df["elevation"].max())
+    st.area_chart(
+        df,
+        x="distance",
+        y=["elevation_scaled", "cadence"],
+        x_label="Distance (km)",
+        y_label="Cadence (rpm)",
+        color=[Colors.PURPLE, Colors.GREY],
+        use_container_width=True,
+    )
+
+    col1, col2 = st.columns(2)
+    avg_cadence = df[df["cadence"] > 0]["cadence"].mean()
+    col1.metric("Average Cadence", f"{avg_cadence:.0f} rpm")
+    col2.metric("Max Cadence", f"{df['cadence'].max():.0f} rpm")
+
+    st.divider()
+
+    # ----------------- POWER -----------------
 
     st.header("Power")
-
+    st.area_chart(df, x="distance", y="power", x_label="Distance (km)", y_label="Power (W)")
     zone_counts = round(df["zone"].value_counts(normalize=True).sort_index() * 100, 1)
     zone_durations = [str(timedelta(seconds=zone_count)) for zone_count in df["zone"].value_counts().sort_index()]
     zone_counts_df = pd.DataFrame(
@@ -143,10 +208,13 @@ if uploaded_file is not None:
         use_container_width=True,
         horizontal=True,
     )
-
     st.table(zone_counts_df.drop(columns=["Percent"]))
 
-    st.subheader("AI coach")
+    st.divider()
+
+    # ----------------- PERFORMANCE COACH -----------------
+
+    st.header("Performance coach")
     messages = [
         {
             "role": "user",
