@@ -84,7 +84,12 @@ def get_zone_range(zone: int, ftp: float) -> str:
     return f"{ftp * zones_upper_thresh[zone]:.0f}+ W"
 
 
-def model_res_generator(messages):
+def model_res_generator():
+    messages = (
+        st.session_state["summary"] + st.session_state["messages"]
+        if "summary" in st.session_state
+        else st.session_state["messages"]
+    )
     stream = ollama.chat(
         model="cycling-qwen2.5:7b",
         messages=messages,
@@ -94,9 +99,25 @@ def model_res_generator(messages):
         yield chunk["message"]["content"]
 
 
+@st.cache_data
+def model_res(messages):
+    response = ollama.chat(
+        model="cycling-qwen2.5:7b",
+        messages=messages,
+    )
+    return response["message"]["content"]
+
+
 st.set_page_config(page_title="Cycling Workout Analysis", page_icon=":bicyclist:")
 
 st.title("Cycling Workout Analysis")
+
+if "messages" not in st.session_state:
+    st.session_state["messages"] = []
+
+if "summary" not in st.session_state:
+    st.session_state["summary"] = []
+
 uploaded_file = st.file_uploader("Choose a TCX file", type=["tcx"], accept_multiple_files=False)
 ftp = st.number_input("Functional Threshold Power (FTP)", 0, 1000, 200)
 
@@ -215,9 +236,36 @@ if uploaded_file is not None:
     # ----------------- PERFORMANCE COACH -----------------
 
     st.header("Performance coach")
-    messages = [
-        {
+
+    if not st.session_state["summary"]:
+        user_message = {
             "role": "user",
             "content": f"Debrief the user's workout in 50 words:\n{zone_counts_df}\n.",
         }
-    ]
+        debrief = model_res(messages=[user_message])
+        st.session_state["summary"] = [
+            user_message,
+            {"role": "assistant", "content": debrief},
+        ]
+
+    for message in st.session_state["summary"]:
+        if message["role"] == "assistant":
+            with st.chat_message("assistant"):
+                st.markdown(message["content"])
+
+    for message in st.session_state["messages"]:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    if prompt := st.chat_input("Chat with the performance coach"):
+        st.session_state["messages"].append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        with st.chat_message("assistant"):
+            message = st.write_stream(model_res_generator())
+            st.session_state["messages"].append({"role": "assistant", "content": message})
+
+    if st.button("Clear chat"):
+        st.session_state["messages"] = []
+        st.session_state["summary"] = []
