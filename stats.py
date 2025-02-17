@@ -20,28 +20,28 @@ def main(args):
     trackpoint_data = []
     trackpoint: TCXTrackPoint
 
-    # Adjust timezone based on user input
     timezone_offset = timedelta(hours=args.timezone)
 
     for trackpoint in tqdm(data.trackpoints):
         time_adjusted = trackpoint.time + timezone_offset
         speed = trackpoint.tpx_ext.get("Speed")
-
-        if args.kph:
-            speed_kph = speed * MPS_TO_KPH
-        else:
-            speed_kph = speed * MPS_TO_MPH
+        speed = speed * (MPS_TO_KPH if args.kph else MPS_TO_MPH)
 
         trackpoint_data.append(
             {
-                "Time": time_adjusted,
-                "Speed": speed_kph,
-                "Elevation": trackpoint.elevation,
+                "time": time_adjusted,
+                "speed": speed,
+                "power": trackpoint.tpx_ext.get("Watts"),
+                "cadence": trackpoint.cadence,
+                "latitude": trackpoint.latitude,
+                "longitude": trackpoint.longitude,
+                "elevation": trackpoint.elevation,
+                "heart_rate": trackpoint.hr_value,
             }
         )
 
     df = pd.DataFrame(trackpoint_data)
-    df.set_index("Time", inplace=True)
+    df.set_index("time", inplace=True)
 
     if args.save_csv:
         output_file = input_file.with_suffix(".csv")
@@ -52,12 +52,12 @@ def main(args):
     ax2 = ax1.twinx()
 
     # Plot the speed on the first y-axis
-    ax1.plot(df.index, df["Speed"], label="Speed", color="blue")
+    ax1.plot(df.index, df["speed"], label="Speed", color="blue")
     ax1.set_ylabel("Speed (km/h)" if args.kph else "Speed (mph)")
     ax1.legend(loc="upper left")
 
     # Plot the elevation on the second y-axis
-    ax2.plot(df.index, df["Elevation"], label="Elevation", color="red")
+    ax2.plot(df.index, df["elevation"], label="Elevation", color="red")
     ax2.set_ylabel("Elevation (m)")
     ax2.legend(loc="upper right")
 
