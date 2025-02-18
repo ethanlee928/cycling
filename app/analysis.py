@@ -5,6 +5,9 @@ import pandas as pd
 import streamlit as st
 from common import ZONE_COLORS, ZONES, Colors, get_tcx_data, get_zone, tcx_to_df
 
+# Custom model built with Ollama Modelfile
+LLM = "cycling-qwen2.5:7b"
+
 
 def set_colors(value: str, color: str = None) -> str:
     if color is None:
@@ -26,7 +29,7 @@ def model_res_generator():
         else st.session_state["messages"]
     )
     stream = ollama.chat(
-        model="cycling-qwen2.5:7b",
+        model=LLM,
         messages=messages,
         stream=True,
     )
@@ -37,7 +40,7 @@ def model_res_generator():
 @st.cache_data
 def model_res(messages):
     response = ollama.chat(
-        model="cycling-qwen2.5:7b",
+        model=LLM,
         messages=messages,
     )
     return response["message"]["content"]
@@ -55,6 +58,7 @@ if "summary" not in st.session_state:
 
 uploaded_file = st.file_uploader("Choose a TCX file", type=["tcx"], accept_multiple_files=False)
 ftp = st.number_input("Functional Threshold Power (FTP)", 0, 1000, 200)
+st.caption("FTP is the highest average power you can sustain for approximately an hour, measured in watts.")
 
 st.divider()
 
@@ -64,6 +68,8 @@ if uploaded_file is not None:
     tcx_data = get_tcx_data(uploaded_file)
     df = tcx_to_df(tcx_data, kph=True)
     df["zone"] = df["power"].apply(lambda x: get_zone(x, ftp))
+
+    st.map(df, latitude="latitude", longitude="longitude", size=1, use_container_width=True)
 
     moving_time_seconds = df[df["speed"] > 0].shape[0]
     power_avg = df["power"].mean()
@@ -172,6 +178,7 @@ if uploaded_file is not None:
 
         st.header("Performance coach")
 
+        # ----------------- SUMMARY -----------------
         if not st.session_state["summary"]:
             user_message = {
                 "role": "user",
@@ -188,6 +195,7 @@ if uploaded_file is not None:
                 with st.chat_message("assistant"):
                     st.markdown(message["content"])
 
+        # ----------------- CHAT -----------------
         for message in st.session_state["messages"]:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
