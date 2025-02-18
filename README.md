@@ -63,6 +63,19 @@ docker run -it --rm -v ${PWD}:/app/ -w /app/ jrottenberg/ffmpeg -i <input-video>
 
 ## Workout Analysis
 
+### Ollama
+
+We can utilise local LLMs as our customised performance coach.
+
+1. Install [Ollama desktop](https://ollama.com).
+2. Build the custom model file. This example used `qwen2.5:7b`.
+
+   ```bash
+   ollama create cycling-qwen2.5:7b -f Modelfile
+   ```
+
+   **\*Remarks**: Some contents in the system prompts of the Modelfile are from [Ref. 2](https://www.procyclingcoaching.com/resources/power-training-zones-for-cycling).\*
+
 ### References
 
 1. [Power Zones by Strava](https://stories.strava.com/articles/feel-the-power-calculate-your-training-pacing-zones-know-what-they-feel-like)
