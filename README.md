@@ -76,8 +76,15 @@ We can utilise local LLMs as our customised performance coach.
 
    **\*Remarks**: Some contents in the system prompts of the Modelfile are from [Ref. 2](https://www.procyclingcoaching.com/resources/power-training-zones-for-cycling).\*
 
+3. Questions:
+    - How's my workout effort?
+    - How to improve my stamina?
+
 ### References
 
 1. [Power Zones by Strava](https://stories.strava.com/articles/feel-the-power-calculate-your-training-pacing-zones-know-what-they-feel-like)
 2. [Power Zones by Pro Cycling Coaching](https://www.procyclingcoaching.com/resources/power-training-zones-for-cycling)
 3. [Strava Guide: Features to Take Your Training to The Next Level](https://stories.strava.com/articles/strava-guide-features-to-take-your-training-to-the-next-level)
+4. [TSS, IF, NP](https://www.trainerroad.com/blog/tss-if-and-workout-levels-3-metrics-to-help-you-understand-your-training-and-get-faster/)
+5. [TSS by Peaksware](https://www.trainingpeaks.com/learn/articles/how-to-plan-your-season-with-training-stress-score/)
+6. [CTL by Peaksware](https://www.trainingpeaks.com/learn/articles/applying-the-numbers-part-1-chronic-training-load/)
