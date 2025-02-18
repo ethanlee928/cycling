@@ -3,56 +3,13 @@ from datetime import timedelta
 import ollama
 import pandas as pd
 import streamlit as st
-from common import MPS_TO_KPH, MPS_TO_MPH, ZONE_COLORS, ZONES, Colors
-from stqdm import stqdm
-from tcxreader.tcxreader import TCXReader, TCXTrackPoint
+from common import ZONE_COLORS, ZONES, Colors, get_tcx_data, get_zone, tcx_to_df
 
 
 def set_colors(value: str, color: str = None) -> str:
     if color is None:
         return value
     return f":{color}[{value}]"
-
-
-def get_tcx_data(tcx_file):
-    reader = TCXReader()
-    return reader.read(tcx_file)
-
-
-def tcx_to_df(tcx_data, kph: bool) -> pd.DataFrame:
-    trackpoint_data = []
-    trackpoint: TCXTrackPoint
-
-    for trackpoint in stqdm(tcx_data.trackpoints):
-        speed = trackpoint.tpx_ext.get("Speed")
-        speed = speed * (MPS_TO_KPH if kph else MPS_TO_MPH)
-        trackpoint_data.append(
-            {
-                "time": trackpoint.time,
-                "distance": trackpoint.distance,
-                "speed": speed,
-                "power": trackpoint.tpx_ext.get("Watts"),
-                "cadence": trackpoint.cadence,
-                "latitude": trackpoint.latitude,
-                "longitude": trackpoint.longitude,
-                "elevation": trackpoint.elevation,
-                "heart_rate": trackpoint.hr_value,
-            }
-        )
-    df = pd.DataFrame(trackpoint_data)
-    df.set_index("time", inplace=True)
-    return df
-
-
-def get_zone(power: float, ftp: float) -> int:
-    if not power:
-        return 0
-    zones_upper_thresh = [0.55, 0.75, 0.9, 1.05, 1.2, 1.5]
-    percentage = power / ftp
-    for idx, thresh in enumerate(zones_upper_thresh):
-        if percentage < thresh:
-            return idx
-    return len(zones_upper_thresh)
 
 
 def get_zone_range(zone: int, ftp: float) -> str:
@@ -211,7 +168,7 @@ if uploaded_file is not None:
 
         st.divider()
 
-    # ----------------- PERFORMANCE COACH -----------------
+        # ----------------- PERFORMANCE COACH -----------------
 
         st.header("Performance coach")
 
