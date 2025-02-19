@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+import altair as alt
 import ollama
 import pandas as pd
 import streamlit as st
@@ -162,6 +163,41 @@ if uploaded_file is not None:
                 "Duration": zone_durations,
             }
         )
+
+        rolling_avg_durations = [
+            "5s",
+            "10s",
+            "30s",
+            "1m",
+            "5m",
+            "10m",
+            "20m",
+            "30m",
+            "1h",
+        ]
+        rolling_avg_series = {}
+        for duration in rolling_avg_durations:
+            duration_seconds = int(pd.to_timedelta(duration).total_seconds())
+            rolling_avg_series[duration] = df["power"].rolling(window=duration_seconds).mean().dropna()
+        df_rolling_avg = pd.DataFrame(rolling_avg_series)
+        df_rolling_avg_max = df_rolling_avg.max()
+        df_rolling_avg_max = pd.DataFrame(df_rolling_avg_max).reset_index()
+        df_rolling_avg_max.columns = ["Duration", "Max"]
+        chart = (
+            alt.Chart(df_rolling_avg_max)
+            .mark_bar()
+            .encode(y=alt.Y("Duration", sort=None), x=alt.X("Max", title="Max Power (W)"))
+        )
+        st.altair_chart(chart, use_container_width=True)
+
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Normalized Power", f"{df['power'].mean() * 0.95:.0f} W")
+        col2.metric("IF", f"{df['power'].mean():.0f} W")
+        col3.metric("TSS", f"{df['power'].max():.0f} W")
+
+        with st.expander("See how to calculate", expanded=True):
+            st.write("TSS")
+
         zone_counts_df.set_index("Zone", inplace=True)
         st.subheader("Zone Distribution")
         st.bar_chart(
