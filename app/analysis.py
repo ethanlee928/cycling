@@ -164,6 +164,7 @@ if uploaded_file is not None:
             }
         )
 
+        st.subheader("Max Power Effort")
         rolling_avg_durations = [
             "5s",
             "10s",
@@ -190,13 +191,42 @@ if uploaded_file is not None:
         )
         st.altair_chart(chart, use_container_width=True)
 
+        st.subheader("Training Intensity")
         col1, col2, col3 = st.columns(3)
-        col1.metric("Normalized Power", f"{df['power'].mean() * 0.95:.0f} W")
-        col2.metric("IF", f"{df['power'].mean():.0f} W")
-        col3.metric("TSS", f"{df['power'].max():.0f} W")
+        normalized_power = (rolling_avg_series["30s"] ** 4).mean() ** 0.25
+        intensity_factor = normalized_power / ftp
+        tss = intensity_factor**2 * moving_time_seconds / 3600 * 100
+        col1.metric("NP", f"{normalized_power:.0f} W")
+        col2.metric("IF", f"{intensity_factor:.2f}")
+        col3.metric("TSS", f"{tss:.0f}")
 
         with st.expander("See how to calculate", expanded=True):
-            st.write("TSS")
+            st.write("NP = Normalized Power")
+            st.latex(
+                r"NP = \sqrt[4]{\frac{1}{T} \sum_{i=1}^{T} \overline{P_i}^4}, \text{where } \overline{P_i} = \text{30s moving average power}"
+            )
+            st.write("IF = Intensity Factor")
+            st.latex(r"IF = \frac{NP}{FTP}")
+            st.write("TSS = Training Stress Score")
+            st.latex(r"TSS = \frac{{IF}^2 \times T}{ 3600 } \times 100, \text{where } T = \text{duration in seconds}")
+
+            st.divider()
+            st.page_link(
+                "https://www.trainingpeaks.com/learn/articles/how-to-plan-your-season-with-training-stress-score/",
+                label="Reference Training Volume Guidelines:",
+                icon="ℹ️",
+            )
+            st.markdown(
+                """
+                | CATEGORY | ANNUAL HOURS | AVG. HRS/WEEK | ANNUAL TSS      | AVG. TSS/WEEK | TARGET CTL |
+                |----------|--------------|---------------|-----------------|---------------|------------|
+                | 1/2      | 700 - 1000   | 14 - 20       | 40,000 - 50,000 | 770 - 960     | 105 - 120  |
+                | 3        | 500 - 700    | 9 - 14        | 25,000 - 35,000 | 480 - 673     | 85 - 95    |
+                | 4        | 350 - 500    | 6 - 10        | 20,000 - 30,000 | 385 - 577     | 70 - 85    |
+                | 5        | 220 - 350    | 3 - 8         | 10,000 - 20,000 | 192 - 385     | 50 - 70    |
+                | Masters  | 350 - 650    | 8 - 12        | 15,000 - 25,000 | 288 - 480     | 60 - 100   |
+                """
+            )
 
         zone_counts_df.set_index("Zone", inplace=True)
         st.subheader("Zone Distribution")
@@ -218,7 +248,7 @@ if uploaded_file is not None:
         if not st.session_state["summary"]:
             user_message = {
                 "role": "user",
-                "content": f"Debrief the user's workout in 50 words:\n{zone_counts_df}\n.",
+                "content": f"Debrief the user's workout in 50 words.\n{zone_counts_df}\nIntensity Factor = {intensity_factor}\nTraining Stress Score = {tss}.",
             }
             debrief = model_res(messages=[user_message])
             st.session_state["summary"] = [
