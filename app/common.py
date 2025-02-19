@@ -1,5 +1,4 @@
 import pandas as pd
-from stqdm import stqdm
 from tcxreader.tcxreader import TCXReader, TCXTrackPoint
 
 MPS_TO_KPH = 3.6
@@ -37,7 +36,7 @@ def tcx_to_df(tcx_data, kph: bool) -> pd.DataFrame:
     trackpoint_data = []
     trackpoint: TCXTrackPoint
 
-    for trackpoint in stqdm(tcx_data.trackpoints):
+    for trackpoint in tcx_data.trackpoints:
         speed = trackpoint.tpx_ext.get("Speed")
         speed = speed * (MPS_TO_KPH if kph else MPS_TO_MPH)
         trackpoint_data.append(
