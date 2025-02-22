@@ -55,6 +55,42 @@ streamlit run Workout_Analysis.py
 
 ### Dashboard Preview
 
+#### Workout Summary
+
+Upload the `.tcx` file of the workout to get the workout summary.
+
+![workout_summary](./images/workout_summary.png)
+
+#### Basic Stats
+
+![basic_stats](./images/basic_stats_01.png)
+![basic_stats](./images/basic_stats_02.png)
+
+#### Detailed Power Stats
+
+![power_analysis](./images/detailed_power_stats.png)
+
+#### Performance Coach on Workout (Qwen 2.5:7b)
+
+![performance_coach](./images/performance_coach_01.png)
+
+#### Weekly TSS
+
+![weekly_TSS](./images/weekly_TSS.png)
+
+#### CTL & ATL
+
+![CTL_ATL](./images/CTL_ATL.png)
+
+#### TSB & Performance Management Chart
+
+![TSB_Performance](./images/TSB_Performance_Management_Chart.png)
+
+#### Performance Coach on Performance (Qwen 2.5:7b)
+
+![Performance_Coach](./images/performance_coach_02.png)
+![Performance_Coach](./images/performance_coach_03.png)
+
 ### References
 
 1. [Power Zones by Strava](https://stories.strava.com/articles/feel-the-power-calculate-your-training-pacing-zones-know-what-they-feel-like)
