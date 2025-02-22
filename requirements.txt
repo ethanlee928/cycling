@@ -1,9 +1,12 @@
 tcxreader==0.4.10
 tqdm
 matplotlib
-numpy
+numpy==1.26.4
 pandas
 opencv-python
+streamlit
+stqdm
+ollama
 
 # development
 flake8
