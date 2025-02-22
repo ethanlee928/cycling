@@ -7,7 +7,6 @@ opencv-python
 streamlit
 stqdm
 ollama
-pydantic
 
 # development
 flake8

@@ -120,12 +120,12 @@ with st.expander("Reference Training Volume Guidelines", expanded=True):
         | 5        | 220 - 350    | 3 - 8         | 10,000 - 20,000 | 192 - 385     | 50 - 70    |
         | Masters  | 350 - 650    | 8 - 12        | 15,000 - 25,000 | 288 - 480     | 60 - 100   |
         """
-    )    
+    )
     st.page_link(
         "https://www.trainingpeaks.com/learn/articles/how-to-plan-your-season-with-training-stress-score/",
         label="Extracted from trainingpeaks.com. Click to read more.",
         icon="ℹ️",
-    )    
+    )
 
 TRAINING_LOAD_TIMEFRAME = 120  # 1 Quarter
 
@@ -222,10 +222,6 @@ delta_tsb = round(delta_tsb, 1)
 col1.metric("CTL", current_ctl, delta=delta_ctl)
 col2.metric("ATL", curremt_atl, delta=delta_atl)
 col3.metric("TSB", current_tsb, delta=delta_tsb)
-
-st.write(
-    f"Today is {today.date()}, here's my training load: CTL={current_ctl}, ATL={curremt_atl}, TSB={current_tsb}.\nDo you recommend training or resting?"
-)
 
 # --- Summary ---
 if not st.session_state["summary_progress"]:
