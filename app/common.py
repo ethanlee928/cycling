@@ -24,11 +24,14 @@ class Colors:
     ORANGE = "#F3742B"
     DARK_ORANGE = "#B83A14"
     BLUE_PURPLE = "#231650"
+    PINK = "#B52F9C"
+    BLUE = "#1D1BF9"
 
 
 def get_tcx_data(tcx_file):
     reader = TCXReader()
     return reader.read(tcx_file)
+
 
 def tcx_to_df(tcx_data, kph: bool) -> pd.DataFrame:
     trackpoint_data = []

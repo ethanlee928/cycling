@@ -74,7 +74,7 @@ We can utilise local LLMs as our customised performance coach.
    ollama create cycling-qwen2.5:7b -f Modelfile
    ```
 
-   **\*Remarks**: Some contents in the system prompts of the Modelfile are from [Ref. 2](https://www.procyclingcoaching.com/resources/power-training-zones-for-cycling).\*
+   **\*Remarks**: Some contents in the system prompts of the Modelfile are from references below.\*
 
 3. Questions:
     - How's my workout effort?
@@ -88,3 +88,6 @@ We can utilise local LLMs as our customised performance coach.
 4. [TSS, IF, NP](https://www.trainerroad.com/blog/tss-if-and-workout-levels-3-metrics-to-help-you-understand-your-training-and-get-faster/)
 5. [TSS by Peaksware](https://www.trainingpeaks.com/learn/articles/how-to-plan-your-season-with-training-stress-score/)
 6. [CTL by Peaksware](https://www.trainingpeaks.com/learn/articles/applying-the-numbers-part-1-chronic-training-load/)
+7. [A blog about CTL and ATL](https://ssp3nc3r.github.io/post/2020-05-08-calculating-training-load-in-cycling/)
+8. [More indepth CTL and ATL analysis](https://konakorgi.com/2020/01/29/entry-5-rest-and-recovery-part-1-managing-fatigue/)
+9. [A blog about CTL, ATL, and TSB in Chinese](https://zhuanlan.zhihu.com/p/389912897)

@@ -5,6 +5,7 @@ numpy==1.26.4
 pandas
 opencv-python
 streamlit
+stqdm
 ollama
 pydantic
 

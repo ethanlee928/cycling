@@ -1,3 +1,4 @@
+import re
 from datetime import timedelta
 
 import altair as alt
@@ -44,7 +45,9 @@ def model_res(messages):
         model=LLM,
         messages=messages,
     )
-    return response["message"]["content"]
+    # remove <think></think> tags and contents within them
+    cleaned_content = re.sub(r"<think>.*?</think>", "", response["message"]["content"], flags=re.DOTALL)
+    return cleaned_content
 
 
 st.set_page_config(page_title="Cycling Workout Analysis", page_icon=":bicyclist:")
