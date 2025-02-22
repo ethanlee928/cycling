@@ -109,6 +109,24 @@ df_tss = pd.DataFrame({"Week": [week.date() for week in weeks], "TSS": weekly_ts
 st.header("Weekly Training Stress Score (TSS)")
 st.bar_chart(df_tss, color=Colors.ORANGE, use_container_width=True)
 
+with st.expander("Reference Training Volume Guidelines", expanded=True):
+    st.markdown(
+        """
+        | CATEGORY | ANNUAL HOURS | AVG. HRS/WEEK | ANNUAL TSS      | AVG. TSS/WEEK | TARGET CTL |
+        |----------|--------------|---------------|-----------------|---------------|------------|
+        | 1/2      | 700 - 1000   | 14 - 20       | 40,000 - 50,000 | 770 - 960     | 105 - 120  |
+        | 3        | 500 - 700    | 9 - 14        | 25,000 - 35,000 | 480 - 673     | 85 - 95    |
+        | 4        | 350 - 500    | 6 - 10        | 20,000 - 30,000 | 385 - 577     | 70 - 85    |
+        | 5        | 220 - 350    | 3 - 8         | 10,000 - 20,000 | 192 - 385     | 50 - 70    |
+        | Masters  | 350 - 650    | 8 - 12        | 15,000 - 25,000 | 288 - 480     | 60 - 100   |
+        """
+    )    
+    st.page_link(
+        "https://www.trainingpeaks.com/learn/articles/how-to-plan-your-season-with-training-stress-score/",
+        label="Extracted from trainingpeaks.com. Click to read more.",
+        icon="ℹ️",
+    )    
+
 TRAINING_LOAD_TIMEFRAME = 120  # 1 Quarter
 
 # --- Training Load ---
