@@ -72,7 +72,7 @@ def get_start_time(df: pd.DataFrame) -> datetime:
 
 
 # --- Page Contents ---
-
+st.set_page_config(page_title="Performance Management", page_icon=":bicyclist:")
 st.title("Performance Management")
 
 st.write("Number of activities:", len(list_tcx_files()))

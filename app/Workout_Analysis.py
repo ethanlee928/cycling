@@ -49,9 +49,8 @@ def model_res(messages):
     cleaned_content = re.sub(r"<think>.*?</think>", "", response["message"]["content"], flags=re.DOTALL)
     return cleaned_content
 
-
-st.set_page_config(page_title="Cycling Workout Analysis", page_icon=":bicyclist:")
-
+# --- Page Contents ---
+st.set_page_config(page_title="Workout Analysis", page_icon=":bicyclist:")
 st.title("Workout Analysis")
 
 if "messages" not in st.session_state:
