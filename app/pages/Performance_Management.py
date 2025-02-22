@@ -73,7 +73,7 @@ def get_start_time(df: pd.DataFrame) -> datetime:
 
 # --- Page Contents ---
 
-st.title("Fitness Score")
+st.title("Performance Management")
 
 st.write("Number of activities:", len(list_tcx_files()))
 dfs = get_history_dfs()

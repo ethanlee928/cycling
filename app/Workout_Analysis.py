@@ -52,7 +52,7 @@ def model_res(messages):
 
 st.set_page_config(page_title="Cycling Workout Analysis", page_icon=":bicyclist:")
 
-st.title("Cycling Workout Analysis")
+st.title("Workout Analysis")
 
 if "messages" not in st.session_state:
     st.session_state["messages"] = []
