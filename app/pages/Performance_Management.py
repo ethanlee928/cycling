@@ -132,6 +132,15 @@ TRAINING_LOAD_TIMEFRAME = 120  # 1 Quarter
 # --- Training Load ---
 st.header("Training Load")
 
+with st.expander("Training Load Calculation", expanded=True):
+    st.latex(r"{CTL}_{t} = \alpha {CTL}_{t} + (1 - \alpha) {CTL}_{t-1}")
+    st.latex(r"\alpha = \frac{2}{42 + 1}")
+    st.divider()
+    st.latex(r"{ATL}_{t} = \beta {ATL}_{t} + (1 - \beta) {ATL}_{t-1}")
+    st.latex(r"\beta = \frac{2}{7 + 1}")
+    st.divider()
+    st.latex(r"TSB = CTL - ATL")
+
 st.write(
     "Calculate Chronic Training Load (CTL), Acute Training Load (ATL), and Training Stress Balance (TSB) for 1 quarter (120 days)"
 )
