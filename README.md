@@ -144,3 +144,55 @@ docker run -it --rm -v ${PWD}:/app/ -w /app/ jrottenberg/ffmpeg -i <input-video>
 ### Fonts
 
 `PIL` allows drawing texts with `.ttf` fonts. The [fonts](./tools//fonts/) are downloaded from [fontspace](https://www.fontspace.com).
+
+## Strava API
+
+- [Strava API Developer Guide](https://developers.strava.com/docs/getting-started/)
+- `We require authentication via OAuth 2.0 to request data about any athlete.` [Authentication](https://developers.strava.com/docs/authentication/)
+
+### OAuth 2.0 with Strava
+
+1. Redirect the user to the Strava authorization page with the following parameters:
+
+   - `client_id`: Your Strava API client ID
+   - `redirect_uri`: The URL to redirect to after authorization
+   - `response_type`: Set to "code"
+   - `scope`: The permissions you want to request (e.g., "read,activity:read")
+   - `approval_prompt=force`: (optional) Forces the user to approve each time
+
+   Example:
+
+   ```bash
+   https://www.strava.com/oauth/authorize?client_id=YOUR_CLIENT_ID&response_type=code&redirect_uri=YOUR_REDIRECT_URI&approval_prompt=force&scope=read,activity:read
+   ```
+
+2. After user approval, Strava redirects the user back to your specified `redirect_uri` with an authorization code in the URL query string:
+
+   ```bash
+   https://yourapp.com/callback?code=AUTHORIZATION_CODE&scope=accepted_scopes
+   ```
+
+3. The backend exchanges the authorization code for tokens:
+
+   - Make a POST request to the Strava token endpoint with the following parameters:
+     - `client_id`: Your Strava API client ID
+     - `client_secret`: Your Strava API client secret
+     - `code`: The authorization code received in step 2
+     - `grant_type`: Set to "authorization_code"
+
+   Example:
+
+   ```bash
+   curl -X POST https://www.strava.com/oauth/token \
+   -d "client_id=YOUR_CLIENT_ID" \
+   -d "client_secret=YOUR_CLIENT_SECRET" \
+   -d "code=AUTHORIZATION_CODE" \
+   -d "grant_type=authorization_code"
+   ```
+
+4. Strava responds with an access token and a refresh token:
+
+   Strava's response includes JSON containing:
+   - `access_token` (short-lived)
+   - `refresh_token` (used to obtain new access tokens)
+   - User information (e.g., athlete ID).
