@@ -14,13 +14,11 @@ from dotenv import load_dotenv
 from streamlit_oauth import OAuth2Component
 
 # Initialize logger
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # Example usage of logger
-logger.info("Application started")
+logger.info("New session started.")
 
 load_dotenv()
 
@@ -45,21 +43,15 @@ def load_cached_data():
     parquet_files = list(CACHE_DIR.glob("*.parquet"))
     logger.info("Loading cached data from %s", CACHE_DIR)
     logger.info("Found Parquet files: %s", [file.name for file in parquet_files])
-    activity_id_to_df = {
-        int(file.stem): pd.read_parquet(file) for file in parquet_files
-    }
+    activity_id_to_df = {int(file.stem): pd.read_parquet(file) for file in parquet_files}
     return activity_id_to_df
 
 
 class StravaOAuth2Component(OAuth2Component):
     """Solution from https://github.com/dnplus/streamlit-oauth/issues/59"""
 
-    def __init__(
-        self, *args, token_endpoint_auth_method="client_secret_post", **kwargs
-    ):
-        super().__init__(
-            *args, token_endpoint_auth_method=token_endpoint_auth_method, **kwargs
-        )
+    def __init__(self, *args, token_endpoint_auth_method="client_secret_post", **kwargs):
+        super().__init__(*args, token_endpoint_auth_method=token_endpoint_auth_method, **kwargs)
 
 
 oauth2 = StravaOAuth2Component(
@@ -83,12 +75,9 @@ def get_athlete_stats(id: int):
     if response.status_code == 200:
         return response.json()
     else:
-        st.error(
-            f"Failed to get athlete ({id}) stats: {response.status_code} - {response.text}"
-        )
+        st.error(f"Failed to get athlete ({id}) stats: {response.status_code} - {response.text}")
 
 
-@st.cache_data(ttl=3600)
 def get_athlete_activities(id: int, t0: int, t1: int):
     """http GET "https://www.strava.com/api/v3/athlete/activities"""
     token = st.session_state["token"]
@@ -109,9 +98,7 @@ def get_athlete_activities(id: int, t0: int, t1: int):
         )
         logger.info("Response status: %d", response.status_code)
         if response.status_code != 200:
-            st.error(
-                f"Failed to get athlete ({id}) activities: {response.status_code} - {response.text}"
-            )
+            st.error(f"Failed to get athlete ({id}) activities: {response.status_code} - {response.text}")
             break
         data = response.json()
         activities_data.extend(data)
@@ -124,9 +111,7 @@ def get_athlete_activities(id: int, t0: int, t1: int):
 
 def filter_ride_activities(activities_data):
     """Filter activities to only include rides"""
-    ride_activities = [
-        activity for activity in activities_data if activity["type"] == "Ride"
-    ]
+    ride_activities = [activity for activity in activities_data if activity["type"] == "Ride"]
     return ride_activities
 
 
@@ -141,9 +126,7 @@ def get_activity(activity_id: int, include_segments_effort: bool = False):
     if response.status_code == 200:
         return response.json()
     else:
-        st.error(
-            f"Failed to get activity ({activity_id}) data: {response.status_code} - {response.text}"
-        )
+        st.error(f"Failed to get activity ({activity_id}) data: {response.status_code} - {response.text}")
 
 
 def get_activity_stream(activity_id: int, keys: List[str]):
@@ -158,9 +141,7 @@ def get_activity_stream(activity_id: int, keys: List[str]):
     if response.status_code == 200:
         return response.json()
     else:
-        st.error(
-            f"Failed to get activity ({activity_id}) stream data: {response.status_code} - {response.text}"
-        )
+        st.error(f"Failed to get activity ({activity_id}) stream data: {response.status_code} - {response.text}")
 
 
 def get_tss(df: pd.DataFrame, ftp: float) -> float:
@@ -220,12 +201,10 @@ else:
 
     st.divider()
 
-    user_input_ftp = st.number_input(
-        "FTP (watts)", min_value=0, max_value=1000, value=200, step=1
-    )
-    user_time_period = st.number_input(
-        "Time Period (days)", min_value=1, max_value=365, value=90, step=1
-    )
+    st.write("Please enter your FTP and the desired time period (e.g., the past 90 days) to analyze.")
+    st.write("⚠️ You will need a power meter for TSS calculation.")
+    user_input_ftp = st.number_input("FTP (watts)", min_value=0, max_value=1000, value=200, step=1)
+    user_time_period = st.number_input("Time Period (days)", min_value=1, max_value=365, value=90, step=1)
 
     activity_id_to_date = {}
     activity_id_to_df = {}
@@ -235,67 +214,55 @@ else:
     epoch_time_0 = int((datetime.now() - timedelta(days=user_time_period)).timestamp())
     epoch_time_1 = int(datetime.now().timestamp())
 
-    activities_data = get_athlete_activities(
-        athlete_dict["id"], epoch_time_0, epoch_time_1
-    )
-    ride_activities = filter_ride_activities(activities_data)
-    ride_activities_id = [
-        activity["id"] for activity in ride_activities if "id" in activity
-    ]
-    st.write(f"Showing data for {user_time_period} days: {len(ride_activities)} rides")
+    with st.status("Let me cook...", expanded=True) as status:
+        st.write("Fetching activities from Strava...")
+        activities_data = get_athlete_activities(athlete_dict["id"], epoch_time_0, epoch_time_1)
+        st.write("Filtering ride activities...")
+        ride_activities = filter_ride_activities(activities_data)
+        ride_activities_id = [activity["id"] for activity in ride_activities if "id" in activity]
+        for activity in ride_activities:
+            activity_id_to_date[activity["id"]] = datetime.strptime(activity["start_date_local"], "%Y-%m-%dT%H:%M:%SZ")
 
-    for activity in ride_activities:
-        activity_id_to_date[activity["id"]] = datetime.strptime(
-            activity["start_date_local"], "%Y-%m-%dT%H:%M:%SZ"
+        # filter out activities in cache but out of time range
+        activity_id_to_df = {
+            activity_id: df for activity_id, df in activity_id_to_df.items() if activity_id in activity_id_to_date
+        }
+
+        st.write("Analyzing activities data...")
+        stream_types = ["time", "distance", "velocity_smooth", "watts", "cadence"]
+        for activity_id in ride_activities_id:
+            if activity_id in activity_id_to_df:
+                logger.info(
+                    "Cached activity %s loaded for user %s.",
+                    activity_id,
+                    token["athlete"]["id"],
+                )
+                continue
+
+            activity_stream = get_activity_stream(activity_id, stream_types)
+            activity_data_stream = {stream_type: stream["data"] for stream_type, stream in activity_stream.items()}
+            df = pd.DataFrame(activity_data_stream)
+            try:
+                logger.info("Caching DataFrame to Parquet: %s", activity_id)
+                df.to_parquet(CACHE_DIR / f"{activity_id}.parquet")
+            except Exception as e:
+                logger.error("Failed to save DataFrame to Parquet: %s", e, exc_info=True)
+            activity_id_to_df[activity_id] = df
+
+        assert len(activity_id_to_df) == len(activity_id_to_date), (
+            f"Mismatch between activity_id_to_df and activity_id_to_date lengths: "
+            f"{len(activity_id_to_df)} vs {len(activity_id_to_date)}"
         )
 
-    # filter out activities in cache but out of time range
-    activity_id_to_df = {
-        activity_id: df
-        for activity_id, df in activity_id_to_df.items()
-        if activity_id in activity_id_to_date
-    }
-
-    stream_types = ["time", "distance", "velocity_smooth", "watts", "cadence"]
-    for activity_id in ride_activities_id:
-        if activity_id in activity_id_to_df:
-            logger.info(
-                "Cached activity %s loaded for user %s.",
-                activity_id,
-                token["athlete"]["id"],
-            )
-            continue
-        # NOTE: Also need to fetch the time stamp of this activity for Weekly TSS
-        activity_stream = get_activity_stream(activity_id, stream_types)
-        activity_data_stream = {
-            stream_type: stream["data"]
-            for stream_type, stream in activity_stream.items()
-        }
-        df = pd.DataFrame(activity_data_stream)
-        try:
-            logger.info("Caching DataFrame to Parquet: %s", activity_id)
-            df.to_parquet(CACHE_DIR / f"{activity_id}.parquet")
-        except Exception as e:
-            logger.error("Failed to save DataFrame to Parquet: %s", e, exc_info=True)
-        activity_id_to_df[activity_id] = df
-
-    assert len(activity_id_to_df) == len(activity_id_to_date), (
-        f"Mismatch between activity_id_to_df and activity_id_to_date lengths: "
-        f"{len(activity_id_to_df)} vs {len(activity_id_to_date)}"
-    )
+    st.write(f"Showing data for past {user_time_period} days: {len(ride_activities)} rides")
 
     # --- Weekly TSS ---
     today = datetime.today()
     weeks = pd.date_range(end=today, periods=52, freq="W-MON").to_pydatetime()
 
     # Use activity_id_to_date and activity_id_to_df
-    start_times = [
-        activity_id_to_date[activity_id] for activity_id in activity_id_to_df.keys()
-    ]
-    l_tss = [
-        get_tss(activity_id_to_df[activity_id], user_input_ftp)
-        for activity_id in activity_id_to_df.keys()
-    ]
+    start_times = [activity_id_to_date[activity_id] for activity_id in activity_id_to_df.keys()]
+    l_tss = [get_tss(activity_id_to_df[activity_id], user_input_ftp) for activity_id in activity_id_to_df.keys()]
     weekly_tss = [0.0] * len(weeks)
 
     # Create mapping from week date to index
@@ -310,12 +277,10 @@ else:
 
         # Add TSS to corresponding week
         if week_monday in index_map:
-            weekly_tss[index_map[week_monday]] += tss
+            weekly_tss[index_map[week_monday]] += round(tss, 1)
 
     # Create DataFrame for visualization
-    df_tss = pd.DataFrame(
-        {"Week": [week.date() for week in weeks], "TSS": weekly_tss}
-    ).set_index("Week")
+    df_tss = pd.DataFrame({"Week": [week.date() for week in weeks], "TSS": weekly_tss}).set_index("Week")
 
     st.header("Weekly Training Stress Score 📅")
     st.bar_chart(df_tss, color=Colors.ORANGE, use_container_width=True)
@@ -378,25 +343,11 @@ else:
         )
     )
 
-    line_ctl = (
-        base.transform_filter(alt.datum.Metric == "CTL")
-        .mark_line()
-        .encode(alt.Y("CTL:Q"))
-    )
-    line_atl = (
-        base.transform_filter(alt.datum.Metric == "ATL")
-        .mark_line()
-        .encode(alt.Y("ATL:Q"))
-    )
-    line_tsb = (
-        base.transform_filter(alt.datum.Metric == "TSB")
-        .mark_line()
-        .encode(alt.Y("TSB:Q"))
-    )
+    line_ctl = base.transform_filter(alt.datum.Metric == "CTL").mark_line().encode(alt.Y("CTL:Q"))
+    line_atl = base.transform_filter(alt.datum.Metric == "ATL").mark_line().encode(alt.Y("ATL:Q"))
+    line_tsb = base.transform_filter(alt.datum.Metric == "TSB").mark_line().encode(alt.Y("TSB:Q"))
 
-    combined_chart = alt.layer(line_tsb, line_ctl + line_atl).resolve_scale(
-        y="independent"
-    )
+    combined_chart = alt.layer(line_tsb, line_ctl + line_atl).resolve_scale(y="independent")
     st.altair_chart(combined_chart, use_container_width=True)
 
     col1, col2, col3 = st.columns(3)
@@ -424,9 +375,5 @@ else:
 
     with st.expander("How to interpret the chart?", expanded=True):
         st.caption("- Overly negative TSB can indicate overtraining.")
-        st.caption(
-            "- Most coaches generally guide towards maintaining TSB value above -30."
-        )
-        st.caption(
-            "- Closer to 0 TSB indicates peak performance, recommended for race day."
-        )
+        st.caption("- Most coaches generally guide towards maintaining TSB value above -30.")
+        st.caption("- Closer to 0 TSB indicates peak performance, recommended for race day.")
