@@ -9,8 +9,10 @@ import altair as alt
 import pandas as pd
 import requests
 import streamlit as st
-from common import Colors
+from common.colors import Colors
+from common.utils import load_cached_data
 from dotenv import load_dotenv
+from models import Activity, AthleteStats, StreamSet
 from streamlit_oauth import OAuth2Component
 
 # Initialize logger
@@ -38,15 +40,6 @@ CACHE_DIR = Path("cache")
 CACHE_DIR.mkdir(exist_ok=True)
 
 
-def load_cached_data():
-    """Load all Parquet files from the cache directory as a dictionary."""
-    parquet_files = list(CACHE_DIR.glob("*.parquet"))
-    logger.info("Loading cached data from %s", CACHE_DIR)
-    logger.info("Found Parquet files: %s", [file.name for file in parquet_files])
-    activity_id_to_df = {int(file.stem): pd.read_parquet(file) for file in parquet_files}
-    return activity_id_to_df
-
-
 class StravaOAuth2Component(OAuth2Component):
     """Solution from https://github.com/dnplus/streamlit-oauth/issues/59"""
 
@@ -64,8 +57,8 @@ oauth2 = StravaOAuth2Component(
 )
 
 
-def get_athlete_stats(id: int):
-    """http GET "https://www.strava.com/api/v3/athletes/{id}/stats" "Authorization: Bearer [[token]]"""
+def get_athlete_stats(id: int) -> AthleteStats:
+    """Fetch athlete stats and validate using Pydantic models."""
     token = st.session_state["token"]
     headers = {"Authorization": f"Bearer {token['access_token']}"}
     url = f"https://www.strava.com/api/v3/athletes/{id}/stats"
@@ -73,20 +66,20 @@ def get_athlete_stats(id: int):
     response = requests.get(url, headers=headers)
     logger.info("Response status: %d", response.status_code)
     if response.status_code == 200:
-        return response.json()
+        return AthleteStats(**response.json())
     else:
         st.error(f"Failed to get athlete ({id}) stats: {response.status_code} - {response.text}")
 
 
-def get_athlete_activities(id: int, t0: int, t1: int):
-    """http GET "https://www.strava.com/api/v3/athlete/activities"""
+def get_athlete_activities(id: int, t0: int, t1: int) -> List[Activity]:
+    """Fetch athlete activities and validate using Pydantic models."""
     token = st.session_state["token"]
     headers = {"Authorization": f"Bearer {token['access_token']}"}
     params = {
         "before": t1,
         "after": t0,
-        "page": 1,  # Fetch the first page
-        "per_page": 30,  # Fetch up to 30 activities per page
+        "page": 1,
+        "per_page": 30,
     }
     activities_data = []
     while True:
@@ -106,30 +99,16 @@ def get_athlete_activities(id: int, t0: int, t1: int):
             break
         params["page"] += 1
 
-    return activities_data
+    return [Activity(**activity) for activity in activities_data]
 
 
-def filter_ride_activities(activities_data):
+def filter_ride_activities(activities_data: List[Activity]) -> List[Activity]:
     """Filter activities to only include rides"""
-    ride_activities = [activity for activity in activities_data if activity["type"] == "Ride"]
+    ride_activities = [activity for activity in activities_data if activity.type == "Ride"]
     return ride_activities
 
 
-def get_activity(activity_id: int, include_segments_effort: bool = False):
-    """http POST "https://www.strava.com/api/v3/activities" "Authorization: Bearer [[token]]"""
-    token = st.session_state["token"]
-    headers = {"Authorization": f"Bearer {token['access_token']}"}
-    url = f"https://www.strava.com/api/v3/activities/{activity_id}?include_all_efforts={'true' if include_segments_effort else 'false'}"
-    logger.info("Fetching activity data from %s", url)
-    response = requests.get(url, headers=headers)
-    logger.info("Response status: %d", response.status_code)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        st.error(f"Failed to get activity ({activity_id}) data: {response.status_code} - {response.text}")
-
-
-def get_activity_stream(activity_id: int, keys: List[str]):
+def get_activity_stream(activity_id: int, keys: List[str]) -> StreamSet:
     """http GET "https://www.strava.com/api/v3/activities/{id}/streams?keys=&key_by_type=" "Authorization: Bearer [[token]]"""
     _keys = ",".join(keys)
     token = st.session_state["token"]
@@ -139,7 +118,7 @@ def get_activity_stream(activity_id: int, keys: List[str]):
     response = requests.get(url, headers=headers)
     logger.info("Response status: %d", response.status_code)
     if response.status_code == 200:
-        return response.json()
+        return StreamSet(**response.json())
     else:
         st.error(f"Failed to get activity ({activity_id}) stream data: {response.status_code} - {response.text}")
 
@@ -177,24 +156,24 @@ else:
         st.subheader(f"Welcome back, {athlete_dict['firstname']}!")
         st.header("All Time Efforts 🏆")
         stats = get_athlete_stats(athlete_dict["id"])
-        all_ride_totals = stats["all_ride_totals"]
+        all_ride_totals = stats.all_ride_totals
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Total Distance", f"{all_ride_totals['distance'] // 1000} km")
+            st.metric("Total Distance", f"{all_ride_totals.distance // 1000} km")
         with col2:
-            st.metric("Total Elevation", f"{all_ride_totals['elevation_gain']:.0f} m")
+            st.metric("Total Elevation", f"{all_ride_totals.elevation_gain:.0f} m")
         with col3:
-            st.metric("Total Rides", all_ride_totals["count"])
+            st.metric("Total Rides", all_ride_totals.count)
 
         st.header(f"In {datetime.now().year} ... 🎯")
-        ytd_ride_totals = stats["ytd_ride_totals"]
+        ytd_ride_totals = stats.all_ride_totals
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Distance", f"{ytd_ride_totals['distance'] // 1000} km")
+            st.metric("YTD Distance", f"{ytd_ride_totals.distance // 1000} km")
         with col2:
-            st.metric("Elevation", f"{ytd_ride_totals['elevation_gain']:.0f} m")
+            st.metric("YTD Elevation", f"{ytd_ride_totals.elevation_gain:.0f} m")
         with col3:
-            st.metric("Rides", ytd_ride_totals["count"])
+            st.metric("YTD Rides", ytd_ride_totals.count)
 
     else:
         st.write("Oops! No athlete information available.")
@@ -219,9 +198,9 @@ else:
         activities_data = get_athlete_activities(athlete_dict["id"], epoch_time_0, epoch_time_1)
         st.write("Filtering ride activities...")
         ride_activities = filter_ride_activities(activities_data)
-        ride_activities_id = [activity["id"] for activity in ride_activities if "id" in activity]
+        ride_activities_id = [activity.id for activity in ride_activities if "id" in activity]
         for activity in ride_activities:
-            activity_id_to_date[activity["id"]] = datetime.strptime(activity["start_date_local"], "%Y-%m-%dT%H:%M:%SZ")
+            activity_id_to_date[activity.id] = datetime.strptime(activity.start_date_local, "%Y-%m-%dT%H:%M:%SZ")
 
         # filter out activities in cache but out of time range
         activity_id_to_df = {
@@ -240,8 +219,7 @@ else:
                 continue
 
             activity_stream = get_activity_stream(activity_id, stream_types)
-            activity_data_stream = {stream_type: stream["data"] for stream_type, stream in activity_stream.items()}
-            df = pd.DataFrame(activity_data_stream)
+            df = activity_stream.to_df()
             try:
                 logger.info("Caching DataFrame to Parquet: %s", activity_id)
                 df.to_parquet(CACHE_DIR / f"{activity_id}.parquet")

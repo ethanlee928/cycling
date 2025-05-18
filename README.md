@@ -155,7 +155,7 @@ docker run -it --rm -v ${PWD}:/app/ -w /app/ jrottenberg/ffmpeg -i <input-video>
 1. Redirect the user to the Strava authorization page with the following parameters:
 
    - `client_id`: Your Strava API client ID
-   - `redirect_uri`: The URL to redirect to after authorization
+   - `redirect_uri`: The URL to redirect to after authorization. Must be within the callback domain specified by the application. localhost and 127.0.0.1 are white-listed.
    - `response_type`: Set to "code"
    - `scope`: The permissions you want to request (e.g., "read,activity:read")
    - `approval_prompt=force`: (optional) Forces the user to approve each time
