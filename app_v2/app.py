@@ -13,6 +13,7 @@ from common.colors import Colors
 from common.utils import load_cached_data
 from dotenv import load_dotenv
 from models import Activity, AthleteStats, StreamSet
+from models.token import Token
 from streamlit_oauth import OAuth2Component
 
 # Initialize logger
@@ -145,38 +146,37 @@ if "token" not in st.session_state:
         st.session_state.token = result.get("token")
         st.rerun()
 else:
-    # If token exists in session state, show the token
-    token = st.session_state["token"]
+    try:
+        token = Token(**st.session_state["token"])
+    except Exception as e:
+        st.error(f"Invalid token structure: {e}")
+        st.stop()
 
-    # === Athlete Info ===
-    athlete_dict = token.get("athlete")
-    if athlete_dict:
-        st.write("Authenticated with Strava ✅")
-        st.image(athlete_dict["profile"], width=100)
-        st.subheader(f"Welcome back, {athlete_dict['firstname']}!")
-        st.header("All Time Efforts 🏆")
-        stats = get_athlete_stats(athlete_dict["id"])
-        all_ride_totals = stats.all_ride_totals
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Total Distance", f"{all_ride_totals.distance // 1000} km")
-        with col2:
-            st.metric("Total Elevation", f"{all_ride_totals.elevation_gain:.0f} m")
-        with col3:
-            st.metric("Total Rides", all_ride_totals.count)
+    # Access token attributes
+    athlete = token.athlete
+    st.write("Authenticated with Strava ✅")
+    st.image(athlete.profile, width=100)
+    st.subheader(f"Welcome back, {athlete.firstname}!")
+    st.header("All Time Efforts 🏆")
+    stats = get_athlete_stats(athlete.id)
+    all_ride_totals = stats.all_ride_totals
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Total Distance", f"{all_ride_totals.distance // 1000} km")
+    with col2:
+        st.metric("Total Elevation", f"{all_ride_totals.elevation_gain:.0f} m")
+    with col3:
+        st.metric("Total Rides", all_ride_totals.count)
 
-        st.header(f"In {datetime.now().year} ... 🎯")
-        ytd_ride_totals = stats.all_ride_totals
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("YTD Distance", f"{ytd_ride_totals.distance // 1000} km")
-        with col2:
-            st.metric("YTD Elevation", f"{ytd_ride_totals.elevation_gain:.0f} m")
-        with col3:
-            st.metric("YTD Rides", ytd_ride_totals.count)
-
-    else:
-        st.write("Oops! No athlete information available.")
+    st.header(f"In {datetime.now().year} ... 🎯")
+    ytd_ride_totals = stats.ytd_ride_totals
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("YTD Distance", f"{ytd_ride_totals.distance // 1000} km")
+    with col2:
+        st.metric("YTD Elevation", f"{ytd_ride_totals.elevation_gain:.0f} m")
+    with col3:
+        st.metric("YTD Rides", ytd_ride_totals.count)
 
     st.divider()
 
@@ -195,7 +195,7 @@ else:
 
     with st.status("Let me cook...", expanded=True) as status:
         st.write("Fetching activities from Strava...")
-        activities_data = get_athlete_activities(athlete_dict["id"], epoch_time_0, epoch_time_1)
+        activities_data = get_athlete_activities(athlete.id, epoch_time_0, epoch_time_1)
         st.write("Filtering ride activities...")
         ride_activities = filter_ride_activities(activities_data)
         ride_activities_id = [activity.id for activity in ride_activities if "id" in activity]
