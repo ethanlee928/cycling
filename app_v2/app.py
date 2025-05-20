@@ -7,13 +7,13 @@ from typing import List
 
 import altair as alt
 import pandas as pd
-import requests
 import streamlit as st
 from common.colors import Colors
 from common.utils import load_cached_data
 from dotenv import load_dotenv
-from models import Activity, AthleteStats, StreamSet
+from models import Activity
 from models.token import Token
+from services.strava_api import StravaAPI
 from streamlit_oauth import OAuth2Component
 
 # Initialize logger
@@ -58,70 +58,10 @@ oauth2 = StravaOAuth2Component(
 )
 
 
-def get_athlete_stats(id: int) -> AthleteStats:
-    """Fetch athlete stats and validate using Pydantic models."""
-    token = st.session_state["token"]
-    headers = {"Authorization": f"Bearer {token['access_token']}"}
-    url = f"https://www.strava.com/api/v3/athletes/{id}/stats"
-    logger.info("Fetching athlete stats from %s", url)
-    response = requests.get(url, headers=headers)
-    logger.info("Response status: %d", response.status_code)
-    if response.status_code == 200:
-        return AthleteStats(**response.json())
-    else:
-        st.error(f"Failed to get athlete ({id}) stats: {response.status_code} - {response.text}")
-
-
-def get_athlete_activities(id: int, t0: int, t1: int) -> List[Activity]:
-    """Fetch athlete activities and validate using Pydantic models."""
-    token = st.session_state["token"]
-    headers = {"Authorization": f"Bearer {token['access_token']}"}
-    params = {
-        "before": t1,
-        "after": t0,
-        "page": 1,
-        "per_page": 30,
-    }
-    activities_data = []
-    while True:
-        logger.info("Fetching athlete activities with params: %s", params)
-        response = requests.get(
-            "https://www.strava.com/api/v3/athlete/activities",
-            headers=headers,
-            params=params,
-        )
-        logger.info("Response status: %d", response.status_code)
-        if response.status_code != 200:
-            st.error(f"Failed to get athlete ({id}) activities: {response.status_code} - {response.text}")
-            break
-        data = response.json()
-        activities_data.extend(data)
-        if not data:
-            break
-        params["page"] += 1
-
-    return [Activity(**activity) for activity in activities_data]
-
-
 def filter_ride_activities(activities_data: List[Activity]) -> List[Activity]:
     """Filter activities to only include rides"""
     ride_activities = [activity for activity in activities_data if activity.type == "Ride"]
     return ride_activities
-
-
-def get_activity_stream(activity_id: int, keys: List[str]) -> StreamSet:
-    """http GET "https://www.strava.com/api/v3/activities/{id}/streams?keys=&key_by_type=" "Authorization: Bearer [[token]]"""
-    _keys = ",".join(keys)
-    token = st.session_state["token"]
-    headers = {"Authorization": f"Bearer {token['access_token']}"}
-    url = f"https://www.strava.com/api/v3/activities/{activity_id}/streams?keys={_keys}&key_by_type=true"
-    logger.info("Fetching activity stream data from %s", url)
-    response = requests.get(url, headers=headers)
-    logger.info("Response status: %d", response.status_code)
-    if response.status_code == 200:
-        return StreamSet(**response.json())
-    else:
-        st.error(f"Failed to get activity ({activity_id}) stream data: {response.status_code} - {response.text}")
 
 
 def get_tss(df: pd.DataFrame, ftp: float) -> float:
@@ -152,13 +92,13 @@ else:
         st.error(f"Invalid token structure: {e}")
         st.stop()
 
-    # Access token attributes
+    strava_api = StravaAPI(token=token)
     athlete = token.athlete
     st.write("Authenticated with Strava ✅")
     st.image(athlete.profile, width=100)
     st.subheader(f"Welcome back, {athlete.firstname}!")
     st.header("All Time Efforts 🏆")
-    stats = get_athlete_stats(athlete.id)
+    stats = strava_api.get_athlete_stats(athlete.id)
     all_ride_totals = stats.all_ride_totals
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -195,10 +135,10 @@ else:
 
     with st.status("Let me cook...", expanded=True) as status:
         st.write("Fetching activities from Strava...")
-        activities_data = get_athlete_activities(athlete.id, epoch_time_0, epoch_time_1)
+        activities_data = strava_api.get_athlete_activities(athlete.id, epoch_time_0, epoch_time_1)
         st.write("Filtering ride activities...")
         ride_activities = filter_ride_activities(activities_data)
-        ride_activities_id = [activity.id for activity in ride_activities if "id" in activity]
+        ride_activities_id = [activity.id for activity in ride_activities]
         for activity in ride_activities:
             activity_id_to_date[activity.id] = datetime.strptime(activity.start_date_local, "%Y-%m-%dT%H:%M:%SZ")
 
@@ -214,11 +154,11 @@ else:
                 logger.info(
                     "Cached activity %s loaded for user %s.",
                     activity_id,
-                    token["athlete"]["id"],
+                    token.athlete.id,
                 )
                 continue
 
-            activity_stream = get_activity_stream(activity_id, stream_types)
+            activity_stream = strava_api.get_activity_stream(activity_id, stream_types)
             df = activity_stream.to_df()
             try:
                 logger.info("Caching DataFrame to Parquet: %s", activity_id)

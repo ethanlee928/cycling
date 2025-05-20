@@ -23,4 +23,4 @@ class Athlete(BaseModel):
     lastname: str
     profile: str  # URL to profile picture
     premium: bool
-    weight: Optional[float]
+    weight: Optional[float] = None

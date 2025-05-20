@@ -12,3 +12,4 @@ from .activity import (
     TimeStream,
 )
 from .athlete import AthleteStats
+from .token import Token

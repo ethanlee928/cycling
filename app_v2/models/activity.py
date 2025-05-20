@@ -29,7 +29,7 @@ class SmoothVelocityStream(BaseStream):
 
 
 class PowerStream(BaseStream):
-    data: List[float]
+    data: List[Optional[float]]
 
 
 class CadenceStream(BaseStream):
@@ -37,7 +37,7 @@ class CadenceStream(BaseStream):
 
 
 class HeartRateStream(BaseStream):
-    data: List[int]
+    data: List[Optional[int]]
 
 
 class LatLngStream(BaseStream):
@@ -45,13 +45,13 @@ class LatLngStream(BaseStream):
 
 
 class StreamSet(BaseModel):
-    time: Optional[TimeStream]
-    distance: Optional[DistanceStream]
-    velocity_smooth: Optional[SmoothVelocityStream]
-    watts: Optional[PowerStream]
-    cadence: Optional[CadenceStream]
-    heartrate: Optional[HeartRateStream]
-    latlng: Optional[LatLngStream]
+    time: Optional[TimeStream] = None
+    distance: Optional[DistanceStream] = None
+    velocity_smooth: Optional[SmoothVelocityStream] = None
+    watts: Optional[PowerStream] = None
+    cadence: Optional[CadenceStream] = None
+    heartrate: Optional[HeartRateStream] = None
+    latlng: Optional[LatLngStream] = None
 
     def to_df(self):
         """Convert the stream set to a DataFrame."""
