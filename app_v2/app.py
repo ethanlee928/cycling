@@ -142,8 +142,11 @@ else:
             activity_stream = strava_api.get_activity_stream(activity_id, stream_types)
             df = activity_stream.to_df()
             try:
-                logger.info("Caching DataFrame to Parquet: %s", activity_id)
-                df.to_parquet(CACHE_DIR / f"{activity_id}.parquet")
+                user_cache_dir = CACHE_DIR / str(athlete.id)
+                user_cache_dir.mkdir(exist_ok=True, parents=True)
+                cache_path = user_cache_dir / f"{activity_id}.parquet"
+                logger.info("Caching DataFrame to Parquet @ %s", cache_path)
+                df.to_parquet(cache_path)
             except Exception as e:
                 logger.error("Failed to save DataFrame to Parquet: %s", e, exc_info=True)
             activity_id_to_df[activity_id] = df
