@@ -3,15 +3,12 @@ import os
 from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import List
 
 import altair as alt
 import pandas as pd
 import streamlit as st
-from common.colors import Colors
-from common.utils import load_cached_data
+from common import Colors, filter_ride_activities, get_tss, load_cached_data
 from dotenv import load_dotenv
-from models import Activity
 from models.token import Token
 from services.strava_api import StravaAPI
 from streamlit_oauth import OAuth2Component
@@ -56,21 +53,6 @@ oauth2 = StravaOAuth2Component(
     REFRESH_TOKEN_URL,
     REVOKE_TOKEN_URL,
 )
-
-
-def filter_ride_activities(activities_data: List[Activity]) -> List[Activity]:
-    """Filter activities to only include rides"""
-    ride_activities = [activity for activity in activities_data if activity.type == "Ride"]
-    return ride_activities
-
-
-def get_tss(df: pd.DataFrame, ftp: float) -> float:
-    # moving_time_seconds = df[df["speed"] > 0].shape[0]
-    pwr_rollings = df["watts"].rolling(window=30).mean().dropna()
-    normalized_power = (pwr_rollings**4).mean() ** 0.25
-    intensity_factor = normalized_power / ftp
-    tss = intensity_factor**2 * len(df) / 3600 * 100
-    return tss
 
 
 # Check if token exists in session state
