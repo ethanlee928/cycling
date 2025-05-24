@@ -7,9 +7,6 @@ from models import Activity
 
 logger = logging.getLogger(__name__)
 
-CACHE_DIR = Path("cache")
-CACHE_DIR.mkdir(exist_ok=True)
-
 
 class Colors:
     GREY = "#3f3f3f"
@@ -22,11 +19,14 @@ class Colors:
     BLUE = "#1D1BF9"
 
 
-def load_cached_data():
+def load_cached_data(cache_dir: Path, user_id: int):
     """Load all Parquet files from the cache directory as a dictionary."""
-    parquet_files = list(CACHE_DIR.glob("*.parquet"))
-    logger.info("Loading cached data from %s", CACHE_DIR)
-    logger.info("Found Parquet files: %s", [file.name for file in parquet_files])
+    user_cache_dir = cache_dir / str(user_id)
+    if not user_cache_dir.exists():
+        logger.info("Cache directory %s does not exist for user %d", user_cache_dir, user_id)
+        return {}
+    parquet_files = list(user_cache_dir.glob("*.parquet"))
+    logger.info("Loading cached data from %s", user_cache_dir)
     activity_id_to_df = {int(file.stem): pd.read_parquet(file) for file in parquet_files}
     return activity_id_to_df
 

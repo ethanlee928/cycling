@@ -14,8 +14,8 @@ from services.strava_api import StravaAPI
 from streamlit_oauth import OAuth2Component
 
 # Initialize logger
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s | %(message)s")
+logger = logging.getLogger("app")
 
 # Example usage of logger
 logger.info("New session started.")
@@ -108,8 +108,7 @@ else:
     user_time_period = st.number_input("Time Period (days)", min_value=1, max_value=365, value=90, step=1)
 
     activity_id_to_date = {}
-    activity_id_to_df = {}
-    activity_id_to_df = load_cached_data()
+    activity_id_to_df = load_cached_data(CACHE_DIR, athlete.id)
 
     # === Weekly TSS Graph ===
     epoch_time_0 = int((datetime.now() - timedelta(days=user_time_period)).timestamp())
