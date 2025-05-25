@@ -3,6 +3,7 @@ numpy==1.26.4
 pandas
 streamlit
 streamlit-oauth
+pydantic
 
 # development
 flake8
