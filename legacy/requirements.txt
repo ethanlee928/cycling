@@ -1,7 +1,12 @@
+tcxreader==0.4.10
+tqdm
 matplotlib
 numpy==1.26.4
 pandas
+opencv-python
 streamlit
+stqdm
+ollama
 streamlit-oauth
 
 # development
