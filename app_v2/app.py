@@ -114,10 +114,8 @@ else:
     epoch_time_0 = int((datetime.now() - timedelta(days=user_time_period)).timestamp())
     epoch_time_1 = int(datetime.now().timestamp())
 
-    with st.status("Let me cook...", expanded=True) as status:
-        st.write("Fetching activities from Strava...")
+    with st.spinner("Loading activities data...", show_time=True):
         activities_data = strava_api.get_athlete_activities(athlete.id, epoch_time_0, epoch_time_1)
-        st.write("Filtering ride activities...")
         ride_activities = filter_ride_activities(activities_data)
         ride_activities_id = [activity.id for activity in ride_activities]
         for activity in ride_activities:
@@ -128,7 +126,6 @@ else:
             activity_id: df for activity_id, df in activity_id_to_df.items() if activity_id in activity_id_to_date
         }
 
-        st.write("Analyzing activities data...")
         stream_types = ["time", "distance", "velocity_smooth", "watts", "cadence"]
         for activity_id in ride_activities_id:
             if activity_id in activity_id_to_df:
@@ -155,8 +152,8 @@ else:
             f"Mismatch between activity_id_to_df and activity_id_to_date lengths: "
             f"{len(activity_id_to_df)} vs {len(activity_id_to_date)}"
         )
-
-    st.write(f"Showing data for past {user_time_period} days: {len(ride_activities)} rides")
+        st.toast("Activities data loaded successfully!", icon="✅")
+    st.success(f"Showing data for past {user_time_period} days: {len(ride_activities)} rides")
 
     # --- Weekly TSS ---
     today = datetime.today()
@@ -187,17 +184,21 @@ else:
     st.header("Weekly Training Stress Score 📅")
     st.bar_chart(df_tss, color=Colors.ORANGE, use_container_width=True)
     with st.expander("Reference Training Volume Guidelines", expanded=True):
-        st.markdown(
-            """
-            | CATEGORY | ANNUAL HOURS | AVG. HRS/WEEK | ANNUAL TSS      | AVG. TSS/WEEK | TARGET CTL |
-            |----------|--------------|---------------|-----------------|---------------|------------|
-            | 1/2      | 700 - 1000   | 14 - 20       | 40,000 - 50,000 | 770 - 960     | 105 - 120  |
-            | 3        | 500 - 700    | 9 - 14        | 25,000 - 35,000 | 480 - 673     | 85 - 95    |
-            | 4        | 350 - 500    | 6 - 10        | 20,000 - 30,000 | 385 - 577     | 70 - 85    |
-            | 5        | 220 - 350    | 3 - 8         | 10,000 - 20,000 | 192 - 385     | 50 - 70    |
-            | Masters  | 350 - 650    | 8 - 12        | 15,000 - 25,000 | 288 - 480     | 60 - 100   |
-            """
-        )
+        training_volume_guidelines = {
+            "CATEGORY": ["1/2", "3", "4", "5", "Masters"],
+            "ANNUAL HOURS": ["700 - 1000", "500 - 700", "350 - 500", "220 - 350", "350 - 650"],
+            "AVG. HRS/WEEK": ["14 - 20", "9 - 14", "6 - 10", "3 - 8", "8 - 12"],
+            "ANNUAL TSS": [
+                "40,000 - 50,000",
+                "25,000 - 35,000",
+                "20,000 - 30,000",
+                "10,000 - 20,000",
+                "15,000 - 25,000",
+            ],
+            "AVG. TSS/WEEK": ["770 - 960", "480 - 673", "385 - 577", "192 - 385", "288 - 480"],
+            "TARGET CTL": ["105 - 120", "85 - 95", "70 - 85", "50 - 70", "60 - 100"],
+        }
+        st.table(pd.DataFrame(training_volume_guidelines).set_index("CATEGORY"))
         st.page_link(
             "https://www.trainingpeaks.com/learn/articles/how-to-plan-your-season-with-training-stress-score/",
             label="Extracted from trainingpeaks.com. Click to read more.",
