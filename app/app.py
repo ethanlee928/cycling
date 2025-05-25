@@ -1,5 +1,4 @@
 import logging
-import os
 from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -8,7 +7,6 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 from common import Colors, filter_ride_activities, get_tss, load_cached_data
-from dotenv import load_dotenv
 from models.token import Token
 from services.strava_api import StravaAPI
 from streamlit_oauth import OAuth2Component
@@ -20,18 +18,7 @@ logger = logging.getLogger("app")
 # Example usage of logger
 logger.info("New session started.")
 
-load_dotenv()
-
 st.title("Cyclist Performance Management 📈")
-
-AUTHORIZE_URL = os.environ.get("STRAVA_OAUTH_AUTHORIZE_URL")
-TOKEN_URL = os.environ.get("STRAVA_OAUTH_TOKEN_URL")
-REFRESH_TOKEN_URL = os.environ.get("STRAVA_OAUTH_REFRESH_TOKEN_URL")
-REVOKE_TOKEN_URL = os.environ.get("STRAVA_OAUTH_REVOKE_TOKEN_URL")
-CLIENT_ID = os.environ.get("STRAVA_OAUTH_CLIENT_ID")
-CLIENT_SECRET = os.environ.get("STRAVA_OAUTH_CLIENT_SECRET")
-REDIRECT_URL = os.environ.get("STRAVA_OAUTH_REDIRECT_URL")
-SCOPE = os.environ.get("STRAVA_OAUTH_SCOPE")
 
 # Define the cache directory as a constant
 CACHE_DIR = Path("cache")
@@ -46,12 +33,12 @@ class StravaOAuth2Component(OAuth2Component):
 
 
 oauth2 = StravaOAuth2Component(
-    CLIENT_ID,
-    CLIENT_SECRET,
-    AUTHORIZE_URL,
-    TOKEN_URL,
-    REFRESH_TOKEN_URL,
-    REVOKE_TOKEN_URL,
+    st.secrets["strava"]["client_id"],
+    st.secrets["strava"]["client_secret"],
+    st.secrets["strava"]["authorize_url"],
+    st.secrets["strava"]["token_url"],
+    st.secrets["strava"]["refresh_token_url"],
+    st.secrets["strava"]["revoke_token_url"],
 )
 
 
@@ -59,8 +46,8 @@ oauth2 = StravaOAuth2Component(
 if "token" not in st.session_state:
     result = oauth2.authorize_button(
         name="Connect with Strava",
-        redirect_uri=REDIRECT_URL,
-        scope=SCOPE,
+        redirect_uri=st.secrets["strava"]["redirect_url"],
+        scope=st.secrets["strava"]["scope"],
         key="strava",
     )
     if result and "token" in result:
