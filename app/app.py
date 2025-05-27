@@ -267,3 +267,8 @@ else:
         st.caption("- Overly negative TSB can indicate overtraining.")
         st.caption("- Most coaches generally guide towards maintaining TSB value above -30.")
         st.caption("- Closer to 0 TSB indicates peak performance, recommended for race day.")
+
+# Add copyright footer
+st.divider()
+st.image("logos/api_logo_pwrdBy_strava_stack_white.png", width=100)
+st.caption("Copyright © 2025 Ethan S.C. Lee.")
