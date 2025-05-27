@@ -59,37 +59,37 @@ streamlit run Workout_Analysis.py
 
 Upload the `.tcx` file of the workout to get the workout summary.
 
-![workout_summary](../images/workout_summary.png)
+![workout_summary](../images/legacy/workout_summary.png)
 
 #### Basic Stats
 
-![basic_stats](../images/basic_stats_01.png)
-![basic_stats](../images/basic_stats_02.png)
+![basic_stats](../images/legacy/basic_stats_01.png)
+![basic_stats](../images/legacy/basic_stats_02.png)
 
 #### Detailed Power Stats
 
-![power_analysis](../images/detailed_power_stats.png)
+![power_analysis](../images/legacy/detailed_power_stats.png)
 
 #### Performance Coach on Workout (Qwen 2.5:7b)
 
-![performance_coach](../images/performance_coach_01.png)
+![performance_coach](../images/legacy/performance_coach_01.png)
 
 #### Weekly TSS
 
-![weekly_TSS](../images/weekly_TSS.png)
+![weekly_TSS](../images/legacy/weekly_TSS.png)
 
 #### CTL & ATL
 
-![CTL_ATL](../images/CTL_ATL.png)
+![CTL_ATL](../images/legacy/CTL_ATL.png)
 
 #### TSB & Performance Management Chart
 
-![TSB_Performance](../images/TSB_Performance_Management_Chart.png)
+![TSB_Performance](../images/legacy/TSB_Performance_Management_Chart.png)
 
 #### Performance Coach on Performance (Qwen 2.5:7b)
 
-![Performance_Coach](../images/performance_coach_02.png)
-![Performance_Coach](../images/performance_coach_03.png)
+![Performance_Coach](../images/legacy/performance_coach_02.png)
+![Performance_Coach](../images/legacy/performance_coach_03.png)
 
 ### References
 
@@ -115,7 +115,7 @@ Run the `stats.py` with the exported `.tcx` file as input.
 python3 stats.py -i <your-activity>.tcx
 ```
 
-![basic-stats](../images/afternoon_ride.png)
+![basic-stats](../images/legacy/afternoon_ride.png)
 
 ### Match Stats with Video
 
@@ -125,7 +125,7 @@ Run the `match_video.py` with the start time and end time of the video
 python3 match_video.py --input-video <input.mp4> --input-file <input.tcx> --output-path <output.mp4> --kph --start-time <YYYY-MM-DD HH:MM:SS> --end-time <YYYY-MM-DD HH:MM:SS> --timezone <X>
 ```
 
-![video-preview](../images/video-preview.jpg)
+![video-preview](../images/legacy/video-preview.jpg)
 
 ## Extract and Combine Audio
 

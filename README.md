@@ -12,6 +12,13 @@ source .venv/bin/activate
 uv pip install -r requirements.txt
 ```
 
+### Use Docker
+
+```bash
+docker build -t cycling . --target prod
+docker run -d --name cycling-app -p 8501:8501 cycling
+```
+
 ## 📈 Streamlit Dashboard
 
 Check out the Streamlit [app](./app/) for workout analysis & performance management.
@@ -22,6 +29,20 @@ Check out the Streamlit [app](./app/) for workout analysis & performance managem
 cd app/
 streamlit run app.py
 ```
+
+### Dashboard Preview
+
+After clicking login, you will be redirected to the Strava login page. After logging in, you will be redirected back to the app.
+
+#### Successful Login
+![streamlit_dashboard](./images/general-stats.png)
+
+#### Workout Summary
+![weekly-tss](./images/weekly-tss.png)
+
+#### Performance Management Chart
+![performance-management](./images/performance-management.png)
+
 
 ### References
 
