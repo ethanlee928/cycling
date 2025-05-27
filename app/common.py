@@ -1,20 +1,11 @@
+import logging
+from pathlib import Path
+from typing import List
+
 import pandas as pd
-from tcxreader.tcxreader import TCXReader, TCXTrackPoint
+from models import Activity
 
-MPS_TO_KPH = 3.6
-MPS_TO_MPH = 2.23694
-
-ZONES = [
-    "Active Recovery",
-    "Endurance",
-    "Tempo",
-    "Threshold",
-    "VO2",
-    "Anaerobic Capacity",
-    "Neuromuscular Power",
-]
-
-ZONE_COLORS = ["gray", None, "blue", "green", "orange", "red", "violet"]
+logger = logging.getLogger(__name__)
 
 
 class Colors:
@@ -28,40 +19,28 @@ class Colors:
     BLUE = "#1D1BF9"
 
 
-def get_tcx_data(tcx_file):
-    reader = TCXReader()
-    return reader.read(tcx_file)
+def load_cached_data(cache_dir: Path, user_id: int):
+    """Load all Parquet files from the cache directory as a dictionary."""
+    user_cache_dir = cache_dir / str(user_id)
+    if not user_cache_dir.exists():
+        logger.info("Cache directory %s does not exist for user %d", user_cache_dir, user_id)
+        return {}
+    parquet_files = list(user_cache_dir.glob("*.parquet"))
+    logger.info("Loading cached data from %s", user_cache_dir)
+    activity_id_to_df = {int(file.stem): pd.read_parquet(file) for file in parquet_files}
+    return activity_id_to_df
 
 
-def tcx_to_df(tcx_data, kph: bool) -> pd.DataFrame:
-    trackpoint_data = []
-    trackpoint: TCXTrackPoint
-
-    for trackpoint in tcx_data.trackpoints:
-        speed = trackpoint.tpx_ext.get("Speed")
-        speed = speed * (MPS_TO_KPH if kph else MPS_TO_MPH)
-        trackpoint_data.append(
-            {
-                "time": trackpoint.time,
-                "distance": trackpoint.distance,
-                "speed": speed,
-                "power": trackpoint.tpx_ext.get("Watts"),
-                "cadence": trackpoint.cadence,
-                "latitude": trackpoint.latitude,
-                "longitude": trackpoint.longitude,
-                "elevation": trackpoint.elevation,
-                "heart_rate": trackpoint.hr_value,
-            }
-        )
-    df = pd.DataFrame(trackpoint_data)
-    df.set_index("time", inplace=True)
-    return df
+def filter_ride_activities(activities_data: List[Activity]) -> List[Activity]:
+    """Filter activities to only include rides"""
+    ride_activities = [activity for activity in activities_data if activity.type == "Ride"]
+    return ride_activities
 
 
-def get_zone(power: float, ftp: float) -> int:
-    zones_upper_thresh = [0.55, 0.75, 0.9, 1.05, 1.2, 1.5]
-    percentage = power / ftp
-    for idx, thresh in enumerate(zones_upper_thresh):
-        if percentage < thresh:
-            return idx
-    return len(zones_upper_thresh)
+def get_tss(df: pd.DataFrame, ftp: float) -> float:
+    # moving_time_seconds = df[df["speed"] > 0].shape[0]
+    pwr_rollings = df["watts"].rolling(window=30).mean().dropna()
+    normalized_power = (pwr_rollings**4).mean() ** 0.25
+    intensity_factor = normalized_power / ftp
+    tss = intensity_factor**2 * len(df) / 3600 * 100
+    return tss
