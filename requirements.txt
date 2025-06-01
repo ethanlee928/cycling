@@ -2,8 +2,11 @@ matplotlib
 numpy==1.26.4
 pandas
 streamlit
-streamlit-oauth
 pydantic
+stravalib
+
+# Custom streamlit oauth package
+https://github.com/ethanlee928/streamlit-oauth/releases/download/v0.1.14.1/streamlit_oauth-0.1.14-py3-none-any.whl
 
 # development
 flake8
