@@ -20,8 +20,10 @@ logger = logging.getLogger("app")
 # Example usage of logger
 logger.info("New session started.")
 
-ferociter_logo = Image.open("logos/ferociter.ico")
-ferociter_logo_png = Image.open("logos/ferociter_2x.jpg")
+with Image.open("logos/ferociter.ico") as logo_ico:
+    ferociter_logo = logo_ico.copy()
+with Image.open("logos/ferociter_2x.jpg") as logo_png:
+    ferociter_logo_png = logo_png.copy()
 st.set_page_config(page_title="Performance", page_icon=ferociter_logo)
 st.image(ferociter_logo_png, width=250)
 st.title("Ferociter")
