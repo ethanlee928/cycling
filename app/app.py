@@ -25,13 +25,6 @@ with Image.open("logos/ferociter.ico") as logo_ico:
 with Image.open("logos/ferociter_2x.jpg") as logo_png:
     ferociter_logo_png = logo_png.copy()
 st.set_page_config(page_title="Performance", page_icon=ferociter_logo)
-st.image(ferociter_logo_png, width=250)
-st.title("Ferociter")
-st.markdown(
-    "***Ferociter*** is a Latin word meaning *to be fierce* or *to be brave*. This platform helps you track and analyze your cycling performance, empowering you to push your limits with ferocity."
-)
-st.markdown("*Never Settle.*")
-st.header("Cycling Performance Management")
 
 # Define the cache directory as a constant
 CACHE_DIR = Path("cache")
@@ -46,22 +39,28 @@ class StravaOAuth2Component(OAuth2Component):
 
 
 oauth2 = StravaOAuth2Component(
-    st.secrets["strava"]["client_id"],
-    st.secrets["strava"]["client_secret"],
-    st.secrets["strava"]["authorize_url"],
-    st.secrets["strava"]["token_url"],
-    st.secrets["strava"]["refresh_token_url"],
-    st.secrets["strava"]["revoke_token_url"],
+    st.secrets.strava.client_id,
+    st.secrets.strava.client_secret,
+    st.secrets.strava.authorize_url,
+    st.secrets.strava.token_url,
+    st.secrets.strava.refresh_token_url,
+    st.secrets.strava.revoke_token_url,
 )
 
 
 # Check if token exists in session state
 if "token" not in st.session_state:
+    st.image(ferociter_logo_png, width=250)
+    st.title("Ferociter")
+    st.markdown(
+        "***Ferociter*** is a Latin word meaning *to be fierce* or *to be brave*. This platform helps you track and analyze your cycling performance, empowering you to push your limits with ferocity."
+    )
+    st.markdown("*Never Settle.*")
     result = oauth2.authorize_button(
         name="Connect with Strava",
         icon="btn_strava_connect_with_orange_x2.png",
-        redirect_uri=st.secrets["strava"]["redirect_url"],
-        scope=st.secrets["strava"]["scope"],
+        redirect_uri=st.secrets.strava.redirect_url,
+        scope=st.secrets.strava.scope,
         key="strava",
     )
     if result and "token" in result:
@@ -69,6 +68,7 @@ if "token" not in st.session_state:
         st.session_state.token = result.get("token")
         st.rerun()
 else:
+    st.header("Cycling Performance Management", divider="orange")
     os.environ["STRAVA_CLIENT_ID"] = st.secrets.strava.client_id
     os.environ["STRAVA_CLIENT_SECRET"] = st.secrets.strava.client_secret
     client = stravalib.client.Client(access_token=st.session_state["token"]["access_token"])
@@ -173,7 +173,6 @@ else:
         if week_monday in index_map:
             weekly_tss[index_map[week_monday]] += round(tss, 1)
 
-    # Create DataFrame for visualization
     df_tss = pd.DataFrame({"Week": [week.date() for week in weeks], "TSS": weekly_tss}).set_index("Week")
 
     st.header("Weekly Training Stress Score 📅")
@@ -288,7 +287,7 @@ else:
         st.caption("- Most coaches generally guide towards maintaining TSB value above -30.")
         st.caption("- Closer to 0 TSB indicates peak performance, recommended for race day.")
 
-# Add copyright footer
+# === Copyright Footer ====
 st.divider()
 st.image("logos/api_logo_pwrdBy_strava_stack_white.png", width=100)
 st.caption("Copyright © 2025 Ethan S.C. Lee.")
