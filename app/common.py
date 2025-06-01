@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import List
 
 import pandas as pd
-from models import Activity
+from stravalib import model
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ def load_cached_data(cache_dir: Path, user_id: int):
     return activity_id_to_df
 
 
-def filter_ride_activities(activities_data: List[Activity]) -> List[Activity]:
+def filter_ride_activities(activities_data: List[model.SummaryActivity]) -> List[model.SummaryActivity]:
     """Filter activities to only include rides"""
     ride_activities = [activity for activity in activities_data if activity.type == "Ride"]
     return ride_activities
