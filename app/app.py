@@ -8,6 +8,7 @@ import pandas as pd
 import streamlit as st
 from common import Colors, filter_ride_activities, get_tss, load_cached_data
 from models.token import Token
+from PIL import Image
 from services.strava_api import StravaAPI
 from streamlit_oauth import OAuth2Component
 
@@ -18,7 +19,16 @@ logger = logging.getLogger("app")
 # Example usage of logger
 logger.info("New session started.")
 
-st.title("Cyclist Performance Management 📈")
+ferociter_logo = Image.open("logos/ferociter.ico")
+ferociter_logo_png = Image.open("logos/ferociter_2x.jpg")
+st.set_page_config(page_title="Performance", page_icon=ferociter_logo)
+st.image(ferociter_logo_png, width=250)
+st.title("Ferociter")
+st.markdown(
+    "***Ferociter*** is a Latin word meaning *to be fierce* or *to be brave*. This platform helps you track and analyze your cycling performance, empowering you to push your limits with ferocity."
+)
+st.markdown("*Never Settle.*")
+st.header("Cycling Performance Management")
 
 # Define the cache directory as a constant
 CACHE_DIR = Path("cache")
@@ -46,6 +56,7 @@ oauth2 = StravaOAuth2Component(
 if "token" not in st.session_state:
     result = oauth2.authorize_button(
         name="Connect with Strava",
+        icon="btn_strava_connect_with_orange_x2.png",
         redirect_uri=st.secrets["strava"]["redirect_url"],
         scope=st.secrets["strava"]["scope"],
         key="strava",
@@ -173,7 +184,13 @@ else:
     with st.expander("Reference Training Volume Guidelines", expanded=True):
         training_volume_guidelines = {
             "CATEGORY": ["1/2", "3", "4", "5", "Masters"],
-            "ANNUAL HOURS": ["700 - 1000", "500 - 700", "350 - 500", "220 - 350", "350 - 650"],
+            "ANNUAL HOURS": [
+                "700 - 1000",
+                "500 - 700",
+                "350 - 500",
+                "220 - 350",
+                "350 - 650",
+            ],
             "AVG. HRS/WEEK": ["14 - 20", "9 - 14", "6 - 10", "3 - 8", "8 - 12"],
             "ANNUAL TSS": [
                 "40,000 - 50,000",
@@ -182,7 +199,13 @@ else:
                 "10,000 - 20,000",
                 "15,000 - 25,000",
             ],
-            "AVG. TSS/WEEK": ["770 - 960", "480 - 673", "385 - 577", "192 - 385", "288 - 480"],
+            "AVG. TSS/WEEK": [
+                "770 - 960",
+                "480 - 673",
+                "385 - 577",
+                "192 - 385",
+                "288 - 480",
+            ],
             "TARGET CTL": ["105 - 120", "85 - 95", "70 - 85", "50 - 70", "60 - 100"],
         }
         st.table(pd.DataFrame(training_volume_guidelines).set_index("CATEGORY"))
@@ -267,3 +290,8 @@ else:
         st.caption("- Overly negative TSB can indicate overtraining.")
         st.caption("- Most coaches generally guide towards maintaining TSB value above -30.")
         st.caption("- Closer to 0 TSB indicates peak performance, recommended for race day.")
+
+# Add copyright footer
+st.divider()
+st.image("logos/api_logo_pwrdBy_strava_stack_white.png", width=100)
+st.caption("Copyright © 2025 Ethan S.C. Lee.")
