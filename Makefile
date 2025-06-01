@@ -15,7 +15,7 @@ check_code_quality:
 	flake8 $(check_dirs) --count --max-line-length=88 --exit-zero  --ignore=D --extend-ignore=E203,E501,E402,W503  --statistics
 
 build:
-	docker build -t cycling . --target prod
+	docker build -t cycling . --target prod --build-arg USERNAME=$(USER) --build-arg USER_ID=$(shell id -u) --build-arg GROUP_ID=$(shell id -g)
 
 run:
 	docker run -d --name cycling-app -p 8501:8501 cycling
