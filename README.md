@@ -15,8 +15,8 @@ uv pip install -r requirements.txt
 ### Use Docker
 
 ```bash
-docker build -t cycling . --target prod
-docker run -d --name cycling-app -p 8501:8501 cycling
+make build
+make run
 ```
 
 ## 📈 Streamlit Dashboard
