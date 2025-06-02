@@ -3,6 +3,8 @@
 export PYTHONPATH = .
 check_dirs := .
 
+export LOCAL_CACHE_DIR?=${PWD}/app/cache
+
 style:
 	black --config black.toml $(check_dirs)
 	isort --profile black $(check_dirs)
@@ -18,7 +20,8 @@ build:
 	docker build -t cycling . --target prod --build-arg USERNAME=$(USER) --build-arg USER_ID=$(shell id -u) --build-arg GROUP_ID=$(shell id -g)
 
 run:
-	docker run -d --name cycling-app -p 8501:8501 cycling
+	mkdir -p ${LOCAL_CACHE_DIR} && \
+	docker run -d --name cycling-app -p 8501:8501 -v ${LOCAL_CACHE_DIR}:/home/$(USER)/app/cache cycling
 
 stop:
 	docker stop cycling-app && docker rm cycling-app
