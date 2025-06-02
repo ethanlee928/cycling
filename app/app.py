@@ -1,15 +1,16 @@
 import logging
+import os
 from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
 
 import altair as alt
 import pandas as pd
+import stravalib
+import stravalib.client
 import streamlit as st
 from common import Colors, filter_ride_activities, get_tss, load_cached_data
-from models.token import Token
 from PIL import Image
-from services.strava_api import StravaAPI
 from streamlit_oauth import OAuth2Component
 
 # Initialize logger
@@ -19,16 +20,11 @@ logger = logging.getLogger("app")
 # Example usage of logger
 logger.info("New session started.")
 
-ferociter_logo = Image.open("logos/ferociter.ico")
-ferociter_logo_png = Image.open("logos/ferociter_2x.jpg")
+with Image.open("logos/ferociter.ico") as logo_ico:
+    ferociter_logo = logo_ico.copy()
+with Image.open("logos/ferociter_2x.jpg") as logo_png:
+    ferociter_logo_png = logo_png.copy()
 st.set_page_config(page_title="Performance", page_icon=ferociter_logo)
-st.image(ferociter_logo_png, width=250)
-st.title("Ferociter")
-st.markdown(
-    "***Ferociter*** is a Latin word meaning *to be fierce* or *to be brave*. This platform helps you track and analyze your cycling performance, empowering you to push your limits with ferocity."
-)
-st.markdown("*Never Settle.*")
-st.header("Cycling Performance Management")
 
 # Define the cache directory as a constant
 CACHE_DIR = Path("cache")
@@ -43,22 +39,28 @@ class StravaOAuth2Component(OAuth2Component):
 
 
 oauth2 = StravaOAuth2Component(
-    st.secrets["strava"]["client_id"],
-    st.secrets["strava"]["client_secret"],
-    st.secrets["strava"]["authorize_url"],
-    st.secrets["strava"]["token_url"],
-    st.secrets["strava"]["refresh_token_url"],
-    st.secrets["strava"]["revoke_token_url"],
+    st.secrets.strava.client_id,
+    st.secrets.strava.client_secret,
+    st.secrets.strava.authorize_url,
+    st.secrets.strava.token_url,
+    st.secrets.strava.refresh_token_url,
+    st.secrets.strava.revoke_token_url,
 )
 
 
 # Check if token exists in session state
 if "token" not in st.session_state:
+    st.image(ferociter_logo_png, width=250)
+    st.title("Ferociter")
+    st.markdown(
+        "***Ferociter*** is a Latin word meaning *to be fierce* or *to be brave*. This platform helps you track and analyze your cycling performance, empowering you to push your limits with ferocity."
+    )
+    st.markdown("*Never Settle.*")
     result = oauth2.authorize_button(
         name="Connect with Strava",
         icon="btn_strava_connect_with_orange_x2.png",
-        redirect_uri=st.secrets["strava"]["redirect_url"],
-        scope=st.secrets["strava"]["scope"],
+        redirect_uri=st.secrets.strava.redirect_url,
+        scope=st.secrets.strava.scope,
         key="strava",
     )
     if result and "token" in result:
@@ -66,19 +68,16 @@ if "token" not in st.session_state:
         st.session_state.token = result.get("token")
         st.rerun()
 else:
-    try:
-        token = Token(**st.session_state["token"])
-    except Exception as e:
-        st.error(f"Invalid token structure: {e}")
-        st.stop()
-
-    strava_api = StravaAPI(token=token)
-    athlete = token.athlete
+    st.header("Cycling Performance Management", divider="orange")
+    os.environ["STRAVA_CLIENT_ID"] = st.secrets.strava.client_id
+    os.environ["STRAVA_CLIENT_SECRET"] = st.secrets.strava.client_secret
+    client = stravalib.client.Client(access_token=st.session_state["token"]["access_token"])
+    athlete = client.get_athlete()
     st.write("Authenticated with Strava ✅")
     st.image(athlete.profile, width=100)
     st.subheader(f"Welcome back, {athlete.firstname}!")
     st.header("All Time Efforts 🏆")
-    stats = strava_api.get_athlete_stats(athlete.id)
+    stats = client.get_athlete_stats(athlete.id)
     all_ride_totals = stats.all_ride_totals
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -113,12 +112,13 @@ else:
     epoch_time_1 = int(datetime.now().timestamp())
 
     with st.spinner("Loading activities data...", show_time=True):
-        activities_data = strava_api.get_athlete_activities(athlete.id, epoch_time_0, epoch_time_1)
+        activities_data = client.get_activities(
+            before=datetime.now(), after=datetime.now() - timedelta(days=user_time_period)
+        )
         ride_activities = filter_ride_activities(activities_data)
         ride_activities_id = [activity.id for activity in ride_activities]
         for activity in ride_activities:
-            activity_id_to_date[activity.id] = datetime.strptime(activity.start_date_local, "%Y-%m-%dT%H:%M:%SZ")
-
+            activity_id_to_date[activity.id] = activity.start_date_local
         # filter out activities in cache but out of time range
         activity_id_to_df = {
             activity_id: df for activity_id, df in activity_id_to_df.items() if activity_id in activity_id_to_date
@@ -127,15 +127,12 @@ else:
         stream_types = ["time", "distance", "velocity_smooth", "watts", "cadence"]
         for activity_id in ride_activities_id:
             if activity_id in activity_id_to_df:
-                logger.info(
-                    "Cached activity %s loaded for user %s.",
-                    activity_id,
-                    token.athlete.id,
-                )
+                logger.info("Cached activity %s loaded for user %s.", activity_id, athlete.id)
                 continue
-
-            activity_stream = strava_api.get_activity_stream(activity_id, stream_types)
-            df = activity_stream.to_df()
+            activity_stream = client.get_activity_streams(activity_id, types=stream_types)
+            df = pd.DataFrame(
+                {stream_type: stream.data for stream_type, stream in activity_stream.items() if stream is not None}
+            )
             try:
                 user_cache_dir = CACHE_DIR / str(athlete.id)
                 user_cache_dir.mkdir(exist_ok=True, parents=True)
@@ -176,7 +173,6 @@ else:
         if week_monday in index_map:
             weekly_tss[index_map[week_monday]] += round(tss, 1)
 
-    # Create DataFrame for visualization
     df_tss = pd.DataFrame({"Week": [week.date() for week in weeks], "TSS": weekly_tss}).set_index("Week")
 
     st.header("Weekly Training Stress Score 📅")
@@ -291,7 +287,7 @@ else:
         st.caption("- Most coaches generally guide towards maintaining TSB value above -30.")
         st.caption("- Closer to 0 TSB indicates peak performance, recommended for race day.")
 
-# Add copyright footer
+# === Copyright Footer ====
 st.divider()
 st.image("logos/api_logo_pwrdBy_strava_stack_white.png", width=100)
 st.caption("Copyright © 2025 Ethan S.C. Lee.")
