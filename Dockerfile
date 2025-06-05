@@ -15,8 +15,8 @@ USER ${USERNAME}
 RUN uv venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-RUN uv pip install matplotlib pandas \
-    streamlit pydantic numpy==1.26.4 stravalib \
+RUN uv pip install matplotlib==3.10.3 pandas==2.2.3 \
+    streamlit==1.45.1 pydantic==2.11.5 numpy==1.26.4 stravalib==2.3 \
     https://github.com/ethanlee928/streamlit-oauth/releases/download/v0.1.14.1/streamlit_oauth-0.1.14-py3-none-any.whl
 
 ENTRYPOINT [ "tail", "-f", "/dev/null" ]

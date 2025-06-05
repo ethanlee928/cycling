@@ -3,3 +3,7 @@ toolbarMode = "minimal"
 
 [ui]
 hideTopBar = true
+
+[server]
+baseUrlPath = "cycling"
+enableCORS = false
