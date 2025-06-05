@@ -1,4 +1,4 @@
-FROM ghcr.io/astral-sh/uv:python3.13-bookworm AS base
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS base
 
 ARG USERNAME
 ARG USER_ID
@@ -24,7 +24,7 @@ ENTRYPOINT [ "tail", "-f", "/dev/null" ]
 FROM base AS prod
 
 # Copy Strava API logo into streamlit oauth frontend dist
-COPY --chown=${USERNAME}:${GROUP_ID} images/strava/btn_strava_connect_with_orange_x2.png /opt/venv/lib/python3.13/site-packages/streamlit_oauth/frontend/dist/
+COPY --chown=${USERNAME}:${GROUP_ID} images/strava/btn_strava_connect_with_orange_x2.png /opt/venv/lib/python3.12/site-packages/streamlit_oauth/frontend/dist/
 COPY --chown=${USERNAME}:${GROUP_ID} app /home/${USERNAME}/app
 WORKDIR /home/${USERNAME}/app
 
