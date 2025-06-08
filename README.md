@@ -35,14 +35,16 @@ streamlit run app.py
 After clicking login, you will be redirected to the Strava login page. After logging in, you will be redirected back to the app.
 
 #### Successful Login
+
 ![streamlit_dashboard](./images/general-stats.png)
 
 #### Workout Summary
+
 ![weekly-tss](./images/weekly-tss.png)
 
 #### Performance Management Chart
-![performance-management](./images/performance-management.png)
 
+![performance-management](./images/performance-management.png)
 
 ### References
 
@@ -108,3 +110,9 @@ After clicking login, you will be redirected to the Strava login page. After log
    - `access_token` (short-lived)
    - `refresh_token` (used to obtain new access tokens)
    - User information (e.g., athlete ID).
+
+## Patch Streamlit index.html
+
+Using `st.set_page_config` does not immediately set the title and page icon; for a fraction of a second, you will still see Streamlit's default logo and title. To avoid this, you need to patch the `index.html` file in the Streamlit source code.
+
+The `index.html` file is located at `<python-env>/lib/<python-version>/site-packages/streamlit/static`.

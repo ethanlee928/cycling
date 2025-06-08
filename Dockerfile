@@ -26,6 +26,12 @@ FROM base AS prod
 # Copy Strava API logo into streamlit oauth frontend dist
 COPY --chown=${USERNAME}:${GROUP_ID} images/strava/btn_strava_connect_with_orange_x2.png /opt/venv/lib/python3.12/site-packages/streamlit_oauth/frontend/dist/
 COPY --chown=${USERNAME}:${GROUP_ID} app /home/${USERNAME}/app
+
+# Patch streamlit index.html to use Ferociter logo and title
+COPY --chown=${USERNAME}:${GROUP_ID} app/logos/ferociter.ico /opt/venv/lib/python3.12/site-packages/streamlit/static/
+RUN sed -i 's|<title>Streamlit</title>|<title>Ferociter</title>|' /opt/venv/lib/python3.12/site-packages/streamlit/static/index.html && \
+    sed -i 's|<link rel="shortcut icon" href="./favicon.png" />|<link rel="shortcut icon" href="./ferociter.ico" />|' /opt/venv/lib/python3.12/site-packages/streamlit/static/index.html
+
 WORKDIR /home/${USERNAME}/app
 
 EXPOSE 8501
