@@ -97,6 +97,8 @@ else:
     with col3:
         st.metric("YTD Rides", ytd_ride_totals.count)
 
+    st.page_link("https://www.strava.com/", label="**View on Strava**", icon="🔗")
+
     st.divider()
 
     st.write("Please enter your FTP and the desired time period (e.g., the past 90 days) to analyze.")
