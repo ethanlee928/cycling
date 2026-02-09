@@ -38,8 +38,15 @@ def filter_ride_activities(activities_data: List[model.SummaryActivity]) -> List
 
 
 def get_tss(df: pd.DataFrame, ftp: float) -> float:
-    # moving_time_seconds = df[df["speed"] > 0].shape[0]
+    if "watts" not in df.columns:
+        logger.warning("Power data (watts) not present in activity, skipping TSS calculation")
+        return 0.0
+
     pwr_rollings = df["watts"].rolling(window=30).mean().dropna()
+    if len(pwr_rollings) == 0:
+        logger.warning("No power data after rolling window, skipping TSS calculation")
+        return 0.0
+
     normalized_power = (pwr_rollings**4).mean() ** 0.25
     intensity_factor = normalized_power / ftp
     tss = intensity_factor**2 * len(df) / 3600 * 100

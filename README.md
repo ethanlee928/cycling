@@ -9,7 +9,15 @@ Extract cycling workout data from Strava, analyse the performance using Strava A
 ```bash
 uv venv .venv
 source .venv/bin/activate
-uv pip install -r requirements.txt
+uv sync
+```
+
+### Code Quality (Dev Dependencies)
+
+```bash
+uv sync --extra dev
+make style           # Format code with ruff
+make check_code_quality  # Lint code with ruff
 ```
 
 ### Use Docker
